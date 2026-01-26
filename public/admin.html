@@ -2,190 +2,52 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard Admin PDAM</title>
+<title>Dashboard Admin</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 <style>
-:root{
---bg:#0f172a;--panel:#020617;--card:#020617;--line:#1e293b;
---pri:#38bdf8;--ok:#22c55e;--err:#ef4444;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Segoe UI;background:var(--bg);color:white}
-
-/* layout */
-header{background:var(--panel);padding:16px 22px;font-size:20px;font-weight:700;border-bottom:1px solid var(--line)}
-.wrap{display:flex;min-height:calc(100vh - 64px)}
-nav{width:230px;background:var(--panel);border-right:1px solid var(--line);padding:14px}
-nav button{width:100%;margin:6px 0;background:#020617;color:white;border:1px solid var(--line);padding:10px;border-radius:10px;text-align:left}
-nav button.active{background:var(--pri);color:black;font-weight:700}
-main{flex:1;padding:22px}
-
-/* ui */
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
-h3{margin-top:0}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.stat{padding:16px;border-radius:14px;background:#020617;border:1px solid var(--line)}
-.stat b{font-size:22px}
-.stat span{color:#94a3b8;font-size:13px}
-
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid var(--line);padding:8px;text-align:center}
-th{background:#020617}
-
-input,select{padding:8px;border-radius:8px;border:1px solid var(--line);background:#020617;color:white}
-button.primary{background:var(--pri);border:none;padding:8px 12px;border-radius:8px;font-weight:700}
-.ok{color:var(--ok)} .err{color:var(--err)}
-
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.gallery img{width:100%;border-radius:12px;border:1px solid var(--line)}
+body{margin:0;font-family:Segoe UI;background:#0f172a;color:white}
+header{padding:16px;background:#020617;font-weight:700}
+main{padding:20px}
+.card{background:#020617;border:1px solid #1e293b;border-radius:16px;padding:16px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #1e293b;padding:8px;text-align:center}
 </style>
 </head>
 <body>
 
-<header>📊 DASHBOARD ADMIN — SISTEM AIR BERSIH</header>
-
-<div class="wrap">
-<nav id="menu"></nav>
-<main id="main"></main>
+<header>DASHBOARD ADMIN</header>
+<main>
+<div class="card">
+<h3>REKAP INPUT</h3>
+<button onclick="exp()">Export Excel</button>
+<table><thead><tr><th>Tanggal</th><th>Unit</th><th>Lalu</th><th>Ini</th><th>Foto</th></tr></thead><tbody id="tb"></tbody></table>
 </div>
+</main>
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbx-RUXa9NRf5GPRjouhdBwGSDJD9Gv8Am-TeqbV2D0gFBwSuNzlTx4blySQJFRM00tF/exec";
 const TOKEN=sessionStorage.token;
 const ROLE=sessionStorage.role;
+if(!TOKEN || ROLE!=="admin"){location.href="index.html";}
 
-if(!TOKEN || ROLE!=="admin"){alert("Akses admin ditolak");location.href="index.html";}
-
-function navBtn(id,t){return `<button id="b_${id}" onclick="show('${id}')">${t}</button>`;}
-
-menu.innerHTML=
-navBtn("dash","Dashboard")+
-navBtn("rekap","Rekap Input")+
-navBtn("foto","Galeri Foto")+
-navBtn("bulan","Rekap Bulanan")+
-navBtn("lock","Tutup Bulan")+
-navBtn("out","Logout");
-
-const pages={
-dash:()=>`
-<div class="grid4">
-<div class="stat"><span>Total Input</span><br><b id="st1">0</b></div>
-<div class="stat"><span>Total Unit</span><br><b id="st2">0</b></div>
-<div class="stat"><span>Total Pemakaian</span><br><b id="st3">0 m³</b></div>
-<div class="stat"><span>Estimasi Pendapatan</span><br><b id="st4">Rp 0</b></div>
-</div>`,
-
-rekap:()=>`
-<div class="card">
-<h3>Rekap Input Meter</h3>
-<button class="primary" onclick="exportExcel()">Export Excel</button>
-<table><thead><tr>
-<th>Tanggal</th><th>Unit</th><th>Lalu</th><th>Sekarang</th><th>Foto</th>
-</tr></thead><tbody id="tb"></tbody></table>
-</div>`,
-
-foto:()=>`
-<div class="card">
-<h3>Galeri Foto Meter</h3>
-<div class="gallery" id="gal"></div>
-</div>`,
-
-bulan:()=>`
-<div class="card">
-<h3>Rekap Bulanan</h3>
-<input type="month" id="bln">
-<button class="primary" onclick="rekapBulan()">Tampilkan</button>
-<table><thead><tr><th>Unit</th><th>Total m³</th></tr></thead><tbody id="tbB"></tbody></table>
-</div>`,
-
-lock:()=>`
-<div class="card">
-<h3>Tutup Bulan</h3>
-<input type="month" id="lm">
-<button class="primary" onclick="lock()">Kunci</button>
-<div id="msg"></div>
-</div>`,
-
-out:()=>{sessionStorage.clear();location.href="index.html";}
-};
-
-function show(id){
-document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-document.getElementById("b_"+id).classList.add("active");
-main.innerHTML=pages[id]();
-if(id=="dash")loadDash();
-if(id=="rekap")loadRekap();
-if(id=="foto")loadFoto();
+async function load(){
+ let d=await fetch(API+"?mode=input&token="+TOKEN).then(r=>r.json());
+ tb.innerHTML=d.map(x=>`
+ <tr>
+ <td>${x["TANGGAL INPUT"]||""}</td>
+ <td>${x["NO UNIT"]}</td>
+ <td>${x["METER BULAN LALU"]}</td>
+ <td>${x["METER BULAN INI"]}</td>
+ <td>${x["FOTO_URL"]?`<a href="${x["FOTO_URL"]}" target="_blank">Lihat</a>`:""}</td>
+ </tr>`).join("");
 }
-show("dash");
+load();
 
-async function apiGet(m){
-return fetch(API+"?mode="+m+"&token="+TOKEN).then(r=>r.json());
-}
-async function apiPost(o){
-o.token=TOKEN;
-return fetch(API,{method:"POST",body:JSON.stringify(o)}).then(r=>r.json());
-}
-
-/* DASH */
-async function loadDash(){
-let d=await apiGet("input");
-st1.innerText=d.length;
-st2.innerText=[...new Set(d.map(x=>x["NO UNIT"]))].length;
-let total=0;
-d.forEach(x=>total+=Number(x["METER BULAN INI"])-Number(x["METER BULAN LALU"]));
-st3.innerText=total+" m³";
-st4.innerText="Rp "+(total*3883).toLocaleString("id-ID");
-}
-
-/* REKAP */
-async function loadRekap(){
-let d=await apiGet("input");
-tb.innerHTML=d.map(x=>`
-<tr>
-<td>${x["TANGGAL INPUT"]||""}</td>
-<td>${x["NO UNIT"]}</td>
-<td>${x["METER BULAN LALU"]}</td>
-<td>${x["METER BULAN INI"]}</td>
-<td>${x["FOTO_URL"]?`<a href="${x["FOTO_URL"]}" target="_blank">Lihat</a>`:""}</td>
-</tr>`).join("");
-}
-
-/* GALERI */
-async function loadFoto(){
-let d=await apiGet("input");
-gal.innerHTML=d.filter(x=>x["FOTO_URL"]).map(x=>`
-<a href="${x["FOTO_URL"]}" target="_blank">
-<img src="${x["FOTO_URL"]}">
-</a>`).join("");
-}
-
-/* BULAN */
-async function rekapBulan(){
-let d=await apiGet("input");
-let m=bln.value;
-let f=d.filter(x=>x["TANGGAL INPUT"] && x["TANGGAL INPUT"].includes(m));
-let map={};
-f.forEach(x=>{
-let pakai=Number(x["METER BULAN INI"])-Number(x["METER BULAN LALU"]);
-map[x["NO UNIT"]]=(map[x["NO UNIT"]]||0)+pakai;
-});
-tbB.innerHTML=Object.keys(map).map(k=>`<tr><td>${k}</td><td>${map[k]}</td></tr>`).join("");
-}
-
-/* LOCK */
-async function lock(){
-let r=await apiPost({mode:"lock",month:lm.value});
-msg.innerHTML=r.status?"<span class='ok'>Bulan dikunci</span>":"<span class='err'>Gagal</span>";
-}
-
-/* EXPORT */
-function exportExcel(){
-let wb=XLSX.utils.book_new();
-let ws=XLSX.utils.table_to_sheet(tb);
-XLSX.utils.book_append_sheet(wb,ws,"REKAP");
-XLSX.writeFile(wb,"rekap_pdam.xlsx");
+function exp(){
+ let wb=XLSX.utils.book_new();
+ let ws=XLSX.utils.table_to_sheet(tb);
+ XLSX.utils.book_append_sheet(wb,ws,"REKAP");
+ XLSX.writeFile(wb,"rekap_pdam.xlsx");
 }
 </script>
 </body>
