@@ -6,205 +6,188 @@
 <title>Input Petugas PDAM</title>
 
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+*{box-sizing:border-box;font-family:Segoe UI,system-ui,Arial}
 
-:root{
-  --pri:#2d7cff;
-  --pri-light:#eef5ff;
-  --txt:#1e293b;
-  --gray:#64748b;
-  --bg:#f8fafc;
-  --card:#ffffff;
-  --border:#cbd5e1;
-  --success:#16a34a;
-  --danger:#dc2626;
-}
-
-*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
 body{
-  background:var(--bg);
-  padding:20px;
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(160deg,#0ea5e9,#020617 70%);
+  color:white;
 }
 
-header{
-  text-align:center;
-  margin-bottom:18px;
-  font-size:22px;
-  font-weight:600;
-  color:var(--pri);
-}
-
-.container{
-  max-width:500px;
-  margin:auto;
-}
-
+/* ===== CARD ===== */
 .card{
-  background:var(--card);
-  padding:18px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
-  margin-bottom:18px;
+  width:100%;
+  max-width:420px;
+  background:rgba(2,6,23,.92);
+  border-radius:26px;
+  padding:26px;
+  box-shadow:0 25px 70px rgba(0,0,0,.65);
+  backdrop-filter:blur(6px);
 }
 
-/* INPUT FIELD */
-.input-group{
-  margin-bottom:16px;
+h2{
+  text-align:center;
+  margin:0;
+  font-weight:800;
+  letter-spacing:.5px;
 }
+
+p{
+  text-align:center;
+  margin:6px 0 22px;
+  color:#94a3b8;
+  font-size:14px;
+}
+
+/* ===== INPUT ===== */
+.group{margin-bottom:16px}
 
 label{
-  display:block;
-  margin-bottom:6px;
-  font-weight:500;
-  color:var(--txt);
+  font-size:13px;
+  color:#94a3b8;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="file"],
-input[type="date"]{
+input{
   width:100%;
-  padding:12px 14px;
-  border:1px solid var(--border);
-  border-radius:10px;
+  margin-top:6px;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #1e293b;
+  background:#020617;
+  color:white;
   font-size:15px;
   outline:none;
-  transition:.2s;
 }
 
 input:focus{
-  border-color:var(--pri);
-  box-shadow:0 0 0 3px rgba(45,124,255,.15);
+  border-color:#38bdf8;
+  box-shadow:0 0 0 3px rgba(56,189,248,.25);
 }
 
+/* ===== FOTO PREVIEW ===== */
+.preview{
+  margin-top:10px;
+  text-align:center;
+}
+
+.preview img{
+  max-width:100%;
+  border-radius:14px;
+  border:1px solid #1e293b;
+  box-shadow:0 8px 25px rgba(0,0,0,.5);
+}
+
+/* ===== BUTTON ===== */
 button{
   width:100%;
-  padding:14px;
-  background:var(--pri);
-  color:#fff;
-  font-size:17px;
-  font-weight:600;
+  padding:15px;
   border:none;
-  border-radius:12px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+  font-weight:800;
+  font-size:16px;
+  color:#020617;
   cursor:pointer;
-  transition:.15s;
+  box-shadow:0 10px 25px rgba(56,189,248,.35);
 }
 
-button:hover{
-  background:#1f5fcc;
-}
+button:hover{filter:brightness(1.05)}
 
-/* PREVIEW FOTO */
-#preview{
-  width:100%;
-  border-radius:10px;
-  margin-top:8px;
-  object-fit:cover;
-  max-height:240px;
-}
-
-.status{
+#info{
   text-align:center;
+  margin-top:14px;
+  min-height:20px;
   font-size:15px;
-  margin-top:10px;
-  font-weight:500;
 }
 
-.success{color:var(--success);}
-.error{color:var(--danger);}
+.ok{color:#22c55e}
+.err{color:#ef4444}
 </style>
 </head>
-
 <body>
 
-<header>Input Meter Petugas PDAM</header>
+<div class="card">
 
-<div class="container card">
+  <h2>INPUT METER PDAM</h2>
+  <p>Form petugas lapangan</p>
 
-  <div class="input-group">
-    <label>Tanggal Input</label>
-    <input type="date" id="tanggal">
+  <div class="group">
+    <label>No Unit</label>
+    <input id="unit" placeholder="GM-A1.01 / TK-102">
   </div>
 
-  <div class="input-group">
-    <label>Nomor Unit</label>
-    <input type="text" id="unit" placeholder="Contoh: A-101">
-  </div>
-
-  <div class="input-group">
+  <div class="group">
     <label>Meter Bulan Lalu</label>
-    <input type="number" id="lalu" placeholder="0">
+    <input id="lalu" type="number" inputmode="numeric">
   </div>
 
-  <div class="input-group">
+  <div class="group">
     <label>Meter Bulan Ini</label>
-    <input type="number" id="ini" placeholder="0">
+    <input id="ini" type="number" inputmode="numeric">
   </div>
 
-  <div class="input-group">
+  <div class="group">
     <label>Foto Meter</label>
-    <input type="file" id="foto" accept="image/*">
-    <img id="preview" style="display:none">
+    <input id="foto" type="file" accept="image/*" capture="environment">
+    <div class="preview" id="prev"></div>
   </div>
 
-  <button onclick="save()">Simpan Data</button>
+  <button onclick="kirim()">SIMPAN DATA</button>
 
-  <div id="status" class="status"></div>
+  <div id="info"></div>
+
 </div>
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbx-RUXa9NRf5GPRjouhdBwGSDJD9Gv8Am-TeqbV2D0gFBwSuNzlTx4blySQJFRM00tF/exec";
 const TOKEN=sessionStorage.token;
-const ROLE=sessionStorage.role;
+if(!TOKEN){location.href="index.html";}
 
-if(!TOKEN || ROLE!=="petugas"){
-  location.href="index.html";
+foto.onchange=()=>{
+ if(foto.files[0]){
+  prev.innerHTML=`<img src="${URL.createObjectURL(foto.files[0])}">`;
+ }
 }
 
-// preview foto
-foto.onchange = () => {
-  const file = foto.files[0];
-  if(file){
-    preview.src = URL.createObjectURL(file);
-    preview.style.display="block";
+function rusun(u){return u.toUpperCase().startsWith("GM")?"GM":"TK";}
+
+async function kirim(){
+ if(!foto.files[0]){info.innerHTML="<span class='err'>Foto wajib diambil</span>";return;}
+
+ info.innerHTML="Mengupload...";
+
+ const d=new Date(), t=d.toISOString().slice(0,10);
+ const name=`${t}_${unit.value}.jpg`;
+
+ const reader=new FileReader();
+ reader.onload=async ()=>{
+  const base64=reader.result.split(",")[1];
+
+  let up=await fetch(API,{method:"POST",body:JSON.stringify({
+   action:"upload",filename:name,base64:base64,type:"image/jpeg",rusun:rusun(unit.value)
+  })}).then(r=>r.json());
+
+  if(!up.status){info.innerHTML="<span class='err'>Upload gagal</span>";return;}
+
+  let r=await fetch(API,{method:"POST",body:JSON.stringify({
+   mode:"input",token:TOKEN,
+   values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
+  })}).then(r=>r.json());
+
+  info.innerHTML=r.status
+   ?"<span class='ok'>✔ Data tersimpan</span>"
+   :"<span class='err'>✖ Gagal menyimpan</span>";
+
+  if(r.status){
+    unit.value="";lalu.value="";ini.value="";foto.value="";prev.innerHTML="";
   }
-};
-
-async function save(){
-  status.textContent="";
-  status.className="status";
-
-  if(!tanggal.value || !unit.value || !lalu.value || !ini.value){
-    status.textContent="Semua field harus diisi.";
-    status.classList.add("error");
-    return;
-  }
-
-  let form = new FormData();
-  form.append("mode","add");
-  form.append("token",TOKEN);
-  form.append("tanggal",tanggal.value);
-  form.append("unit",unit.value);
-  form.append("lalu",lalu.value);
-  form.append("ini",ini.value);
-  if(foto.files[0]) form.append("foto",foto.files[0]);
-
-  status.textContent="Menyimpan...";
-  let res = await fetch(API, {method:"POST", body:form});
-  let r = await res.json();
-
-  if(r.status==="success"){
-    status.textContent="✔ Data berhasil disimpan!";
-    status.classList.add("success");
-    // reset form
-    setTimeout(()=>location.reload(),1500);
-  } else {
-    status.textContent="✘ Gagal menyimpan! " + (r.message||"");
-    status.classList.add("error");
-  }
+ };
+ reader.readAsDataURL(foto.files[0]);
 }
 </script>
-
 </body>
 </html>
