@@ -3,103 +3,208 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Input Petugas</title>
+<title>Input Petugas PDAM</title>
+
 <style>
-*{box-sizing:border-box}
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+:root{
+  --pri:#2d7cff;
+  --pri-light:#eef5ff;
+  --txt:#1e293b;
+  --gray:#64748b;
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --border:#cbd5e1;
+  --success:#16a34a;
+  --danger:#dc2626;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
 body{
-margin:0;font-family:Segoe UI;
-background:#0f172a;color:white
+  background:var(--bg);
+  padding:20px;
 }
+
 header{
-padding:16px;text-align:center;
-background:#020617;font-weight:700
+  text-align:center;
+  margin-bottom:18px;
+  font-size:22px;
+  font-weight:600;
+  color:var(--pri);
 }
+
+.container{
+  max-width:500px;
+  margin:auto;
+}
+
 .card{
-background:#020617;border-radius:22px;
-padding:20px;margin:16px;
-box-shadow:0 10px 30px rgba(0,0,0,.4)
+  background:var(--card);
+  padding:18px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
+  margin-bottom:18px;
 }
-label{font-size:13px;color:#94a3b8}
-input{
-width:100%;padding:14px;margin:6px 0 14px;
-border-radius:14px;border:1px solid #1e293b;
-background:#020617;color:white;font-size:16px
+
+/* INPUT FIELD */
+.input-group{
+  margin-bottom:16px;
 }
+
+label{
+  display:block;
+  margin-bottom:6px;
+  font-weight:500;
+  color:var(--txt);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"],
+input[type="date"]{
+  width:100%;
+  padding:12px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  font-size:15px;
+  outline:none;
+  transition:.2s;
+}
+
+input:focus{
+  border-color:var(--pri);
+  box-shadow:0 0 0 3px rgba(45,124,255,.15);
+}
+
 button{
-width:100%;padding:16px;border:none;border-radius:18px;
-background:linear-gradient(135deg,#38bdf8,#0ea5e9);
-font-weight:800;font-size:17px
+  width:100%;
+  padding:14px;
+  background:var(--pri);
+  color:#fff;
+  font-size:17px;
+  font-weight:600;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  transition:.15s;
 }
-.ok{color:#22c55e}.err{color:#ef4444}
-#info{text-align:center;margin-top:12px;font-size:15px}
-.preview{margin-top:10px;text-align:center}
-.preview img{max-width:100%;border-radius:14px;border:1px solid #1e293b}
+
+button:hover{
+  background:#1f5fcc;
+}
+
+/* PREVIEW FOTO */
+#preview{
+  width:100%;
+  border-radius:10px;
+  margin-top:8px;
+  object-fit:cover;
+  max-height:240px;
+}
+
+.status{
+  text-align:center;
+  font-size:15px;
+  margin-top:10px;
+  font-weight:500;
+}
+
+.success{color:var(--success);}
+.error{color:var(--danger);}
 </style>
 </head>
+
 <body>
 
-<header>INPUT METER AIR</header>
+<header>Input Meter Petugas PDAM</header>
 
-<div class="card">
-<label>No Unit</label>
-<input id="unit" placeholder="GM-A1.01 / TK-102">
+<div class="container card">
 
-<label>Meter Bulan Lalu</label>
-<input id="lalu" type="number" inputmode="numeric">
+  <div class="input-group">
+    <label>Tanggal Input</label>
+    <input type="date" id="tanggal">
+  </div>
 
-<label>Meter Bulan Ini</label>
-<input id="ini" type="number" inputmode="numeric">
+  <div class="input-group">
+    <label>Nomor Unit</label>
+    <input type="text" id="unit" placeholder="Contoh: A-101">
+  </div>
 
-<label>Foto Meter</label>
-<input id="foto" type="file" accept="image/*" capture="environment">
+  <div class="input-group">
+    <label>Meter Bulan Lalu</label>
+    <input type="number" id="lalu" placeholder="0">
+  </div>
 
-<div class="preview" id="prev"></div>
+  <div class="input-group">
+    <label>Meter Bulan Ini</label>
+    <input type="number" id="ini" placeholder="0">
+  </div>
 
-<button onclick="kirim()">SIMPAN DATA</button>
-<div id="info"></div>
+  <div class="input-group">
+    <label>Foto Meter</label>
+    <input type="file" id="foto" accept="image/*">
+    <img id="preview" style="display:none">
+  </div>
+
+  <button onclick="save()">Simpan Data</button>
+
+  <div id="status" class="status"></div>
 </div>
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbx-RUXa9NRf5GPRjouhdBwGSDJD9Gv8Am-TeqbV2D0gFBwSuNzlTx4blySQJFRM00tF/exec";
 const TOKEN=sessionStorage.token;
-if(!TOKEN){location.href="index.html";}
+const ROLE=sessionStorage.role;
 
-foto.onchange=()=>{
- if(foto.files[0]){
-  prev.innerHTML=`<img src="${URL.createObjectURL(foto.files[0])}">`;
- }
+if(!TOKEN || ROLE!=="petugas"){
+  location.href="index.html";
 }
 
-function rusun(u){return u.toUpperCase().startsWith("GM")?"GM":"TK";}
+// preview foto
+foto.onchange = () => {
+  const file = foto.files[0];
+  if(file){
+    preview.src = URL.createObjectURL(file);
+    preview.style.display="block";
+  }
+};
 
-async function kirim(){
- if(!foto.files[0]){info.innerHTML="<span class='err'>Foto wajib</span>";return;}
+async function save(){
+  status.textContent="";
+  status.className="status";
 
- info.innerHTML="Mengupload...";
+  if(!tanggal.value || !unit.value || !lalu.value || !ini.value){
+    status.textContent="Semua field harus diisi.";
+    status.classList.add("error");
+    return;
+  }
 
- const d=new Date(), t=d.toISOString().slice(0,10);
- const name=`${t}_${unit.value}.jpg`;
+  let form = new FormData();
+  form.append("mode","add");
+  form.append("token",TOKEN);
+  form.append("tanggal",tanggal.value);
+  form.append("unit",unit.value);
+  form.append("lalu",lalu.value);
+  form.append("ini",ini.value);
+  if(foto.files[0]) form.append("foto",foto.files[0]);
 
- const reader=new FileReader();
- reader.onload=async ()=>{
-  const base64=reader.result.split(",")[1];
+  status.textContent="Menyimpan...";
+  let res = await fetch(API, {method:"POST", body:form});
+  let r = await res.json();
 
-  let up=await fetch(API,{method:"POST",body:JSON.stringify({
-   action:"upload",filename:name,base64:base64,type:"image/jpeg",rusun:rusun(unit.value)
-  })}).then(r=>r.json());
-
-  if(!up.status){info.innerHTML="<span class='err'>Upload gagal</span>";return;}
-
-  let r=await fetch(API,{method:"POST",body:JSON.stringify({
-   mode:"input",token:TOKEN,
-   values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
-  })}).then(r=>r.json());
-
-  info.innerHTML=r.status?"<span class='ok'>✔ Data tersimpan</span>":"<span class='err'>✖ Gagal</span>";
-  if(r.status){unit.value="";lalu.value="";ini.value="";foto.value="";prev.innerHTML="";}
- };
- reader.readAsDataURL(foto.files[0]);
+  if(r.status==="success"){
+    status.textContent="✔ Data berhasil disimpan!";
+    status.classList.add("success");
+    // reset form
+    setTimeout(()=>location.reload(),1500);
+  } else {
+    status.textContent="✘ Gagal menyimpan! " + (r.message||"");
+    status.classList.add("error");
+  }
 }
 </script>
+
 </body>
 </html>
