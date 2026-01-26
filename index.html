@@ -3,192 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <title>Manajemen Air Bersih</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 <style>
-:root{
---bg:#0f172a;--panel:#020617;--card:#020617;--line:#1e293b;
---primary:#38bdf8;--ok:#22c55e;--err:#ef4444;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Segoe UI,Arial;background:var(--bg);color:white}
-
-/* ===== LOGIN ===== */
-#loginBox{max-width:360px;margin:10vh auto;background:var(--panel);padding:24px;border-radius:16px;box-shadow:0 0 20px #000}
-#loginBox h2{text-align:center;margin-bottom:16px}
-input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#020617;color:white;margin:6px 0}
-button{background:var(--primary);border:none;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
-button:hover{opacity:.85}
-
-/* ===== APP ===== */
-#app{display:none}
-header{background:var(--panel);padding:14px 18px;font-size:18px;font-weight:600;border-bottom:1px solid var(--line)}
-.wrap{display:flex;min-height:calc(100vh - 60px)}
-
-/* ===== SIDEBAR ===== */
-nav{width:220px;background:var(--panel);border-right:1px solid var(--line);padding:12px}
-nav button{width:100%;margin:6px 0;background:#020617;color:white;border:1px solid var(--line)}
-nav button.active{background:var(--primary);color:black}
-
-/* ===== CONTENT ===== */
-main{flex:1;padding:20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
-h3{margin-top:0}
-
-/* ===== TABLE ===== */
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid var(--line);padding:8px;text-align:center}
-th{background:#020617}
-
-.info{margin-top:10px;color:var(--primary)}
-.ok{color:var(--ok)} .err{color:var(--err)}
-
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:700px){nav{width:100px} .grid2{grid-template-columns:1fr}}
+body{margin:0;font-family:Segoe UI;background:#0f172a;color:white}
+.card{background:#020617;border:1px solid #1e293b;border-radius:14px;padding:18px;max-width:520px;margin:10vh auto}
+input,button{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:none}
+button{background:#38bdf8;font-weight:700}
+.ok{color:#22c55e}.err{color:#ef4444}
 </style>
 </head>
 <body>
 
-<!-- ================= LOGIN ================= -->
-<div id="loginBox">
-<h2>LOGIN SISTEM PDAM</h2>
+<div id="login" class="card">
+<h2>LOGIN PETUGAS</h2>
 <input id="u" placeholder="Username">
 <input id="p" type="password" placeholder="Password">
 <button onclick="login()">LOGIN</button>
-<div id="lmsg" class="info"></div>
+<div id="lmsg"></div>
 </div>
 
-<!-- ================= APP ================= -->
-<div id="app">
-<header>APLIKASI MANAJEMEN AIR BERSIH</header>
-<div class="wrap">
-<nav id="menu"></nav>
-<main id="main"></main>
-</div>
+<div id="app" class="card" style="display:none">
+<h2>INPUT METER + FOTO</h2>
+<input id="unit" placeholder="GM-A1.01 / TK-102">
+<input id="lalu" type="number" placeholder="Meter lalu">
+<input id="ini" type="number" placeholder="Meter sekarang">
+<input id="foto" type="file" accept="image/*" capture="environment">
+<button onclick="kirim()">SIMPAN</button>
+<div id="info"></div>
 </div>
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbx-RUXa9NRf5GPRjouhdBwGSDJD9Gv8Am-TeqbV2D0gFBwSuNzlTx4blySQJFRM00tF/exec";
-let TOKEN="", ROLE="";
+let TOKEN="";
 
-/* ===== LOGIN ===== */
 async function login(){
  let r=await fetch(API,{method:"POST",body:JSON.stringify({action:"login",username:u.value,password:p.value})}).then(r=>r.json());
  if(!r.status){lmsg.innerHTML="<span class='err'>Login gagal</span>";return;}
- sessionStorage.token=r.token; sessionStorage.role=r.role;
- init();
+ TOKEN=r.token; login.style.display="none"; app.style.display="block";
 }
-function logout(){sessionStorage.clear();location.reload();}
 
-/* ===== INIT ===== */
-function init(){
- TOKEN=sessionStorage.token; ROLE=sessionStorage.role;
- loginBox.style.display="none"; app.style.display="block";
- if(ROLE=="petugas") loadPetugas();
- if(ROLE=="admin") loadAdmin();
+function parseRusun(u){
+ return u.toUpperCase().startsWith("GM")?"GM":"TK";
 }
-if(sessionStorage.token) init();
 
-/* ===== CORE ===== */
-function navBtn(id,title){
- return `<button id="b_${id}" onclick="show('${id}')">${title}</button>`;
-}
-function show(id){
- document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
- document.getElementById("b_"+id)?.classList.add("active");
- main.innerHTML = pages[id]();
- if(loaders[id]) loaders[id]();
-}
-async function apiGet(m){return fetch(API+"?mode="+m+"&token="+TOKEN).then(r=>r.json())}
-async function apiPost(o){o.token=TOKEN;return fetch(API,{method:"POST",body:JSON.stringify(o)}).then(r=>r.json())}
+async function kirim(){
+ if(!foto.files[0]){info.innerHTML="<span class='err'>Foto wajib</span>";return;}
 
-/* ===== PETUGAS ===== */
-function loadPetugas(){
- menu.innerHTML = navBtn("input","Input Meter") + navBtn("out","Logout");
- pages={
- input:()=>`
- <div class="card">
- <h3>INPUT METER AIR</h3>
- <div class="grid2">
- <div><label>No Unit</label><input id="i_unit" placeholder="GM-A1.01 / TK-102"></div>
- <div><label>Meter Bulan Lalu</label><input id="i_lalu" type="number"></div>
- <div><label>Meter Bulan Ini</label><input id="i_ini" type="number"></div>
- </div>
- <button onclick="simpanInput()">SIMPAN</button>
- <div id="i_info" class="info"></div>
- </div>`,
- out:()=>{logout(); return "";}
+ const d=new Date(), t=d.toISOString().slice(0,10);
+ const name = `${t}_${unit.value}.jpg`;
+
+ const reader=new FileReader();
+ reader.onload=async ()=>{
+   const base64=reader.result.split(",")[1];
+   let r=await fetch(API,{method:"POST",body:JSON.stringify({
+     action:"upload",
+     filename:name,
+     base64:base64,
+     type:"image/jpeg",
+     rusun:parseRusun(unit.value),
+     unit:unit.value
+   })}).then(r=>r.json());
+
+   info.innerHTML = r.status ? `<span class='ok'>✔ Foto tersimpan</span>` : `<span class='err'>✖ Gagal upload</span>`;
  };
- show("input");
-}
-async function simpanInput(){
- let r=await apiPost({mode:"input",values:[new Date(),i_unit.value,i_lalu.value,i_ini.value,"",""]});
- i_info.innerHTML = r.status ? "<span class='ok'>✔ Tersimpan</span>" : "<span class='err'>✖ Gagal</span>";
-}
-
-/* ===== ADMIN ===== */
-function loadAdmin(){
- menu.innerHTML =
- navBtn("rekap","Rekap")+
- navBtn("bulan","Bulanan")+
- navBtn("set","Tutup Bulan")+
- navBtn("out","Logout");
-
- pages={
- rekap:()=>`
- <div class="card">
- <h3>REKAP TAGIHAN</h3>
- <button onclick="exportExcel()">Export Excel</button>
- <button onclick="window.print()">PDF</button>
- <table><thead><tr><th>Tanggal</th><th>Unit</th><th>Total</th></tr></thead><tbody id="tbRekap"></tbody></table>
- </div>`,
- bulan:()=>`
- <div class="card">
- <h3>REKAP BULANAN</h3>
- <select id="bln" onchange="rekapBulan()"></select>
- <table><thead><tr><th>Unit</th><th>Total m³</th><th>Total Rp</th></tr></thead><tbody id="tbBulan"></tbody></table>
- </div>`,
- set:()=>`
- <div class="card">
- <h3>TUTUP BULAN</h3>
- <input type="month" id="lockm">
- <button onclick="lock()">TUTUP BULAN</button>
- <div id="sinfo" class="info"></div>
- </div>`,
- out:()=>{logout(); return "";}
- };
- show("rekap"); loadRekap(); loadBulanList();
-}
-
-/* ===== ADMIN FUNC ===== */
-async function loadRekap(){
- let d=await apiGet("rekap");
- tbRekap.innerHTML=d.map(x=>`<tr><td>${x["TANGGAL"]||x["TANGGAL BAYAR"]||""}</td><td>${x["NO UNIT"]}</td><td>${x["TOTAL"]||x["TOTAL TAGIHAN"]}</td></tr>`).join("");
-}
-async function loadBulanList(){
- let d=await apiGet("hitung");
- let m=[...new Set(d.map(x=>new Date(x["TANGGAL"]).toISOString().slice(0,7)))];
- bln.innerHTML=m.map(x=>`<option>${x}</option>`).join("");
-}
-async function rekapBulan(){
- let d=await apiGet("hitung"), m=bln.value, f=d.filter(x=>new Date(x["TANGGAL"]).toISOString().slice(0,7)==m);
- let map={};
- f.forEach(x=>{
-  if(!map[x["NO UNIT"]]) map[x["NO UNIT"]]={m3:0,total:0};
-  map[x["NO UNIT"]].m3+=Number(x["PEMAKAIAN M3"]);
-  map[x["NO UNIT"]].total+=Number(x["TOTAL"]);
- });
- tbBulan.innerHTML=Object.keys(map).map(k=>`<tr><td>${k}</td><td>${map[k].m3}</td><td>Rp ${map[k].total.toLocaleString("id-ID")}</td></tr>`).join("");
-}
-function exportExcel(){
- let wb=XLSX.utils.book_new();
- let ws=XLSX.utils.table_to_sheet(tbRekap);
- XLSX.utils.book_append_sheet(wb,ws,"REKAP");
- XLSX.writeFile(wb,"rekap_air.xlsx");
-}
-async function lock(){
- let r=await apiPost({mode:"lock",month:lockm.value});
- sinfo.innerHTML=r.status?"<span class='ok'>✔ Bulan dikunci</span>":"<span class='err'>✖ Gagal</span>";
+ reader.readAsDataURL(foto.files[0]);
 }
 </script>
 </body>
