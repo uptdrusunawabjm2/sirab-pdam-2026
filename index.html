@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Manajemen Air Bersih</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body{font-family:Arial;background:#0f172a;color:white;margin:0}
+header{background:#020617;padding:14px;text-align:center;font-size:20px;font-weight:bold}
+nav{background:#020617;padding:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+nav button{background:#0ea5e9;border:none;padding:8px 12px;border-radius:6px;color:black;cursor:pointer}
+section{display:none;padding:20px}
+.active{display:block}
+input,select{padding:7px;border-radius:6px;border:none;margin:4px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border:1px solid #334155;padding:6px;text-align:center}
+.box{background:#020617;padding:12px;border-radius:10px}
+.info{margin-top:8px;color:#38bdf8}
+</style>
+</head>
+<body>
+
+<header>APLIKASI MANAJEMEN AIR BERSIH</header>
+
+<div id="loginBox" class="box" style="max-width:320px;margin:40px auto">
+<h3>LOGIN ADMIN</h3>
+<input id="u" placeholder="Username"><br>
+<input id="p" type="password" placeholder="Password"><br>
+<button onclick="login()">LOGIN</button>
+<div id="lmsg"></div>
+</div>
+
+<div id="app" style="display:none">
+<nav>
+<button onclick="show('unit')">Unit</button>
+<button onclick="show('hitung')">Tagihan</button>
+<button onclick="show('rekap')">Rekap</button>
+<button onclick="show('bulan')">Rekap Bulanan</button>
+<button onclick="show('set')">Tutup Bulan</button>
+<button onclick="logout()">Logout</button>
+</nav>
+
+<section id="unit" class="active box">
+<h3>DATA UNIT</h3>
+<table><thead><tr><th>No Unit</th><th>Nama</th></tr></thead><tbody id="tbUnit"></tbody></table>
+</section>
+
+<section id="hitung" class="box">
+<h3>HITUNG TAGIHAN</h3>
+<input id="hu" placeholder="GM-A1.01 / TK-102">
+<input id="hl" type="number" placeholder="Meter lalu">
+<input id="hi" type="number" placeholder="Meter ini">
+<button onclick="hitung()">Proses</button>
+<div id="hinfo"></div>
+</section>
+
+<section id="rekap" class="box">
+<h3>REKAP PEMBAYARAN</h3>
+<button onclick="exportExcel()">Export Excel</button>
+<button onclick="window.print()">Export PDF</button>
+<table><thead><tr><th>Tanggal</th><th>Unit</th><th>Total</th><th>Bayar</th><th>Sisa</th></tr></thead><tbody id="tbRekap"></tbody></table>
+</section>
+
+<section id="bulan" class="box">
+<h3>REKAP BULANAN</h3>
+<select id="bln" onchange="rekapBulan()"></select>
+<table><thead><tr><th>Unit</th><th>Total Pemakaian</th><th>Total Tagihan</th></tr></thead><tbody id="tbBulan"></tbody></table>
+</section>
+
+<section id="set" class="box">
+<h3>TUTUP BULAN</h3>
+<input id="lockm" type="month">
+<button onclick="lock()">TUTUP BULAN</button>
+<div id="sinfo"></div>
+</section>
+</div>
+
+<script>
+const API="PASTE_URL_WEBAPP_DISINI";
+
+// ===== LOGIN =====
+async function login(){
+ let set = await fetch(API+"?mode=set").then(r=>r.json());
+ if(u.value==set.ADMIN_USER && p.value==set.ADMIN_PASS){
+  sessionStorage.setItem("login","1");
+  init();
+ } else lmsg.innerHTML="Login salah";
+}
+function logout(){sessionStorage.clear();location.reload();}
+function init(){
+ loginBox.style.display="none";
+ app.style.display="block";
+ loadAll();
+}
+if(sessionStorage.getItem("login")) init();
+
+// ===== CORE =====
+function show(id){
+ document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+}
+async function get(m){return fetch(API+"?mode="+m).then(r=>r.json())}
+
+// ===== LOAD =====
+async function loadAll(){
+ let u=await get("unit");
+ tbUnit.innerHTML=u.map(x=>`<tr><td>${x["NO UNIT"]}</td><td>${x["NAMA PENGHUNI"]}</td></tr>`).join("");
+
+ let r=await get("rekap");
+ tbRekap.innerHTML=r.map(x=>`<tr><td>${x["TANGGAL BAYAR"]}</td><td>${x["NO UNIT"]}</td><td>${x["TOTAL TAGIHAN"]}</td><td>${x["JUMLAH BAYAR"]}</td><td>${x["SISA"]}</td></tr>`).join("");
+
+ let h=await get("hitung");
+ let months=[...new Set(h.map(x=>new Date(x["TANGGAL"]).toISOString().slice(0,7)))];
+ bln.innerHTML=months.map(m=>`<option>${m}</option>`).join("");
+}
+
+// ===== HITUNG =====
+async function hitung(){
+ let pakai=hi.value-hl.value;
+ let total=(pakai*3883)+10000;
+ await fetch(API,{method:"POST",body:JSON.stringify({
+  mode:"hitung",
+  date:new Date(),
+  values:[new Date(),hu.value,hl.value,hi.value,pakai,3883,pakai*3883,10000,total]
+ })});
+ hinfo.innerHTML="Total: Rp "+total.toLocaleString("id-ID");
+}
+
+// ===== REKAP BULANAN =====
+async function rekapBulan(){
+ let d=await get("hitung");
+ let m=bln.value;
+ let f=d.filter(x=>new Date(x["TANGGAL"]).toISOString().slice(0,7)==m);
+ let map={};
+ f.forEach(x=>{
+  if(!map[x["NO UNIT"]]) map[x["NO UNIT"]]={pakai:0,total:0};
+  map[x["NO UNIT"]].pakai+=Number(x["PEMAKAIAN M3"]);
+  map[x["NO UNIT"]].total+=Number(x["TOTAL"]);
+ });
+ tbBulan.innerHTML=Object.keys(map).map(k=>
+ `<tr><td>${k}</td><td>${map[k].pakai}</td><td>Rp ${map[k].total.toLocaleString("id-ID")}</td></tr>`
+ ).join("");
+}
+
+// ===== EXPORT =====
+function exportExcel(){
+ let wb=XLSX.utils.book_new();
+ let ws=XLSX.utils.table_to_sheet(tbRekap);
+ XLSX.utils.book_append_sheet(wb,ws,"REKAP");
+ XLSX.writeFile(wb,"rekap_pdam.xlsx");
+}
+
+// ===== LOCK =====
+async function lock(){
+ await fetch(API,{method:"POST",body:JSON.stringify({mode:"lock",month:lockm.value})});
+ sinfo.innerHTML="✔ Bulan dikunci";
+}
+</script>
+</body>
+</html>
