@@ -2,27 +2,33 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Admin</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 body{margin:0;font-family:Segoe UI;background:#0f172a;color:white}
-header{padding:16px;background:#020617;font-weight:700}
-main{padding:20px}
-.card{background:#020617;border:1px solid #1e293b;border-radius:16px;padding:16px}
-table{width:100%;border-collapse:collapse}
+header{padding:16px;text-align:center;background:#020617;font-weight:800}
+.card{background:#020617;border-radius:18px;padding:16px;margin:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{border:1px solid #1e293b;padding:8px;text-align:center}
+th{background:#020617}
+button{padding:10px 14px;border:none;border-radius:10px;background:#38bdf8;font-weight:700;margin-bottom:10px}
+.wrap{overflow-x:auto}
 </style>
 </head>
 <body>
 
 <header>DASHBOARD ADMIN</header>
-<main>
+
 <div class="card">
-<h3>REKAP INPUT</h3>
 <button onclick="exp()">Export Excel</button>
-<table><thead><tr><th>Tanggal</th><th>Unit</th><th>Lalu</th><th>Ini</th><th>Foto</th></tr></thead><tbody id="tb"></tbody></table>
+<div class="wrap">
+<table>
+<thead><tr><th>Tanggal</th><th>Unit</th><th>Lalu</th><th>Ini</th><th>Foto</th></tr></thead>
+<tbody id="tb"></tbody>
+</table>
 </div>
-</main>
+</div>
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbx-RUXa9NRf5GPRjouhdBwGSDJD9Gv8Am-TeqbV2D0gFBwSuNzlTx4blySQJFRM00tF/exec";
