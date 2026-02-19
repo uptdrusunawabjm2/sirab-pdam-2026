@@ -1,206 +1,52 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Input Petugas PDAM</title>
-
-<style>
-*{box-sizing:border-box;font-family:Segoe UI,system-ui,Arial}
-
-body{
-  margin:0;
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(160deg,#0ea5e9,#020617 70%);
-  color:white;
-}
-
-/* ===== CARD ===== */
-.card{
-  width:100%;
-  max-width:420px;
-  background:rgba(2,6,23,.92);
-  border-radius:26px;
-  padding:26px;
-  box-shadow:0 25px 70px rgba(0,0,0,.65);
-  backdrop-filter:blur(6px);
-}
-
-h2{text-align:center;margin:0;font-weight:800;letter-spacing:.5px}
-p{text-align:center;margin:6px 0 22px;color:#94a3b8;font-size:14px}
-
-/* ===== INPUT ===== */
-.group{margin-bottom:16px}
-
-label{font-size:13px;color:#94a3b8}
-
-input{
-  width:100%;
-  margin-top:6px;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid #1e293b;
-  background:#020617;
-  color:white;
-  font-size:15px;
-  outline:none;
-}
-
-input:focus{
-  border-color:#38bdf8;
-  box-shadow:0 0 0 3px rgba(56,189,248,.25);
-}
-
-/* ===== FOTO PREVIEW ===== */
-.preview{margin-top:10px;text-align:center}
-.preview img{
-  max-width:100%;
-  border-radius:14px;
-  border:1px solid #1e293b;
-  box-shadow:0 8px 25px rgba(0,0,0,.5);
-}
-
-/* ===== BUTTON ===== */
-button{
-  width:100%;
-  padding:15px;
-  border:none;
-  border-radius:16px;
-  background:linear-gradient(135deg,#38bdf8,#0ea5e9);
-  font-weight:800;
-  font-size:16px;
-  color:#020617;
-  cursor:pointer;
-  box-shadow:0 10px 25px rgba(56,189,248,.35);
-}
-
-button:hover{filter:brightness(1.05)}
-
-#info{text-align:center;margin-top:14px;min-height:20px;font-size:15px}
-.ok{color:#22c55e}
-.err{color:#ef4444}
-</style>
+<title>Input Meter PDAM</title>
 </head>
 <body>
 
-<div class="card">
+<h2>INPUT METER</h2>
 
-  <h2>INPUT METER PDAM</h2>
-  <p>Form petugas lapangan</p>
+<input id="unit" placeholder="No Unit"><br><br>
+<input id="lalu" type="number" placeholder="Meter Lalu"><br><br>
+<input id="ini" type="number" placeholder="Meter Ini"><br><br>
+<input id="foto" type="file" accept="image/*"><br><br>
 
-  <div class="group">
-    <label>No Unit</label>
-    <input id="unit" placeholder="GM-A1.01 / TK-102">
-  </div>
-
-  <div class="group">
-    <label>Meter Bulan Lalu</label>
-    <input id="lalu" type="number" inputmode="numeric">
-  </div>
-
-  <div class="group">
-    <label>Meter Bulan Ini</label>
-    <input id="ini" type="number" inputmode="numeric">
-  </div>
-
-  <div class="group">
-    <label>Foto Meter</label>
-    <input id="foto" type="file" accept="image/*" capture="environment">
-    <div class="preview" id="prev"></div>
-  </div>
-
-  <button onclick="kirim()">SIMPAN DATA</button>
-
-  <div id="info"></div>
-
-</div>
+<button onclick="kirim()">SIMPAN</button>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwmkZnu2zx-Snz-pnxeIXUQDgwqVE-6aMBLYLbQv6i5N5y7bC5SajqSjHPzt8UJUqbZ8a/exec";
+const API="https://script.google.com/macros/s/AKfycbwy8MDN7v6zH-5WbBIN3YVm0q0AchlT8y7zP7_H0nAkH3WhkeogXfzHoB_IZsHF3NSGug/exec";
 const TOKEN=sessionStorage.token;
 if(!TOKEN) location.href="index.html";
 
-let lock=false;
-
-function rusun(u){return u.toUpperCase().startsWith("GM")?"GM":"TK";}
-
-async function fetchTimeout(opt,ms=20000){
- const ctrl=new AbortController();
- const id=setTimeout(()=>ctrl.abort(),ms);
- opt.signal=ctrl.signal;
- try{const r=await fetch(API,opt);clearTimeout(id);return r;}
- catch(e){clearTimeout(id);throw e;}
-}
-
 async function kirim(){
+const reader=new FileReader();
+reader.onload=async()=>{
+const base64=reader.result.split(",")[1];
 
- if(lock) return;
- if(!unit.value||!lalu.value||!ini.value){
-  info.innerHTML="<span class='err'>Lengkapi data</span>";return;
- }
+const fd1=new FormData();
+fd1.append("data",JSON.stringify({
+action:"upload",
+filename:Date.now()+".jpg",
+base64:base64,
+type:"image/jpeg"
+}));
+const up=await fetch(API,{method:"POST",body:fd1}).then(r=>r.json());
 
- if(Number(ini.value)<Number(lalu.value)){
-  info.innerHTML="<span class='err'>Meter bulan ini tidak boleh lebih kecil</span>";return;
- }
+const fd2=new FormData();
+fd2.append("data",JSON.stringify({
+mode:"input",
+token:TOKEN,
+values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
+}));
+await fetch(API,{method:"POST",body:fd2});
 
- if(!foto.files[0]){
-  info.innerHTML="<span class='err'>Foto wajib</span>";return;
- }
-
- lock=true;
- info.innerHTML="Upload foto...";
-
- const reader=new FileReader();
- reader.onload=async()=>{
-
- try{
-
-  const base64=reader.result.split(",")[1];
-
-  let up=await fetchTimeout({
-   method:"POST",
-   body:JSON.stringify({
-    action:"upload",
-    filename:new Date().toISOString().slice(0,10)+"_"+unit.value+".jpg",
-    base64:base64,
-    type:"image/jpeg",
-    rusun:rusun(unit.value)
-   })
-  }).then(r=>r.json());
-
-  if(!up.status){throw "upload";}
-
-  info.innerHTML="Menyimpan...";
-
-  let sv=await fetchTimeout({
-   method:"POST",
-   body:JSON.stringify({
-    mode:"input",
-    token:TOKEN,
-    values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
-   })
-  }).then(r=>r.json());
-
-  info.innerHTML=sv.status
-   ?"<span class='ok'>✔ Data tersimpan</span>"
-   :"<span class='err'>Gagal simpan</span>";
-
-  if(sv.status){
-   unit.value="";lalu.value="";ini.value="";foto.value="";prev.innerHTML="";
-  }
-
- }catch(e){
-  info.innerHTML="<span class='err'>Server tidak merespon</span>";
- }
-
- lock=false;
-
- };
- reader.readAsDataURL(foto.files[0]);
+alert("Data tersimpan");
+};
+reader.readAsDataURL(foto.files[0]);
 }
 </script>
+
 </body>
 </html>
