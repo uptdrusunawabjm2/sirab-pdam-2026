@@ -119,94 +119,86 @@ button:hover{filter:brightness(1.05)}
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbx-RUXa9NRf5GPRjouhdBwGSDJD9Gv8Am-TeqbV2D0gFBwSuNzlTx4blySQJFRM00tF/exec";
+const API="https://script.google.com/macros/s/AKfycbwmkZnu2zx-Snz-pnxeIXUQDgwqVE-6aMBLYLbQv6i5N5y7bC5SajqSjHPzt8UJUqbZ8a/exec";
 const TOKEN=sessionStorage.token;
+if(!TOKEN) location.href="index.html";
 
-if(!TOKEN){ location.href="index.html"; }
+let lock=false;
 
-foto.onchange=()=>{
- if(foto.files[0]){
-  prev.innerHTML=`<img src="${URL.createObjectURL(foto.files[0])}">`;
- }
-}
+function rusun(u){return u.toUpperCase().startsWith("GM")?"GM":"TK";}
 
-function rusun(u){
- return u.toUpperCase().startsWith("GM") ? "GM" : "TK";
+async function fetchTimeout(opt,ms=20000){
+ const ctrl=new AbortController();
+ const id=setTimeout(()=>ctrl.abort(),ms);
+ opt.signal=ctrl.signal;
+ try{const r=await fetch(API,opt);clearTimeout(id);return r;}
+ catch(e){clearTimeout(id);throw e;}
 }
 
 async function kirim(){
 
- if(!unit.value || !lalu.value || !ini.value){
-   info.innerHTML="<span class='err'>Lengkapi semua data</span>";
-   return;
+ if(lock) return;
+ if(!unit.value||!lalu.value||!ini.value){
+  info.innerHTML="<span class='err'>Lengkapi data</span>";return;
+ }
+
+ if(Number(ini.value)<Number(lalu.value)){
+  info.innerHTML="<span class='err'>Meter bulan ini tidak boleh lebih kecil</span>";return;
  }
 
  if(!foto.files[0]){
-   info.innerHTML="<span class='err'>Foto wajib diambil</span>";
-   return;
+  info.innerHTML="<span class='err'>Foto wajib</span>";return;
  }
 
- info.innerHTML="Mengupload foto...";
-
- const d=new Date(), t=d.toISOString().slice(0,10);
- const name=`${t}_${unit.value}.jpg`;
+ lock=true;
+ info.innerHTML="Upload foto...";
 
  const reader=new FileReader();
- reader.onload=async ()=>{
+ reader.onload=async()=>{
+
+ try{
 
   const base64=reader.result.split(",")[1];
 
-  // === UPLOAD FOTO (ASLI, TIDAK DIUBAH) ===
-  let up = await fetch(API,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"upload",
-      filename:name,
-      base64:base64,
-      type:"image/jpeg",
-      rusun:rusun(unit.value)
-    })
+  let up=await fetchTimeout({
+   method:"POST",
+   body:JSON.stringify({
+    action:"upload",
+    filename:new Date().toISOString().slice(0,10)+"_"+unit.value+".jpg",
+    base64:base64,
+    type:"image/jpeg",
+    rusun:rusun(unit.value)
+   })
   }).then(r=>r.json());
 
-  if(!up.status){
-    info.innerHTML="<span class='err'>Upload foto gagal</span>";
-    return;
-  }
+  if(!up.status){throw "upload";}
 
-  info.innerHTML="Menyimpan data...";
+  info.innerHTML="Menyimpan...";
 
-  // === SIMPAN DATA (ASLI, TIDAK DIUBAH) ===
-  let r = await fetch(API,{
-    method:"POST",
-    body:JSON.stringify({
-      mode:"input",
-      token:TOKEN,
-      values:[
-        new Date(),
-        unit.value,
-        lalu.value,
-        ini.value,
-        "",
-        "",
-        up.url
-      ]
-    })
+  let sv=await fetchTimeout({
+   method:"POST",
+   body:JSON.stringify({
+    mode:"input",
+    token:TOKEN,
+    values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
+   })
   }).then(r=>r.json());
 
-  info.innerHTML = r.status
-   ? "<span class='ok'>✔ Data berhasil disimpan</span>"
-   : "<span class='err'>✖ Gagal menyimpan data</span>";
+  info.innerHTML=sv.status
+   ?"<span class='ok'>✔ Data tersimpan</span>"
+   :"<span class='err'>Gagal simpan</span>";
 
-  if(r.status){
-    unit.value="";
-    lalu.value="";
-    ini.value="";
-    foto.value="";
-    prev.innerHTML="";
+  if(sv.status){
+   unit.value="";lalu.value="";ini.value="";foto.value="";prev.innerHTML="";
   }
+
+ }catch(e){
+  info.innerHTML="<span class='err'>Server tidak merespon</span>";
+ }
+
+ lock=false;
 
  };
-
  reader.readAsDataURL(foto.files[0]);
 }
 </script>

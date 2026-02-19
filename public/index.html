@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login Sistem PDAM</title>
+
 <style>
 *{box-sizing:border-box}
 body{
@@ -20,55 +21,67 @@ border-radius:22px;
 padding:26px;
 box-shadow:0 20px 50px rgba(0,0,0,.6)
 }
-h2{text-align:center;margin:0 0 6px}
-p{text-align:center;color:#94a3b8;margin:0 0 20px;font-size:14px}
-label{font-size:13px;color:#94a3b8}
-input{
-width:100%;padding:14px;margin-top:6px;margin-bottom:14px;
-border-radius:14px;border:1px solid #1e293b;
-background:#020617;color:white;font-size:15px
+input,button{
+width:100%;padding:14px;margin-top:8px;border-radius:14px;border:none;font-size:15px
 }
-button{
-width:100%;padding:14px;border:none;border-radius:16px;
-background:linear-gradient(135deg,#38bdf8,#0ea5e9);
-font-weight:700;font-size:16px
-}
+input{background:#020617;color:white;border:1px solid #1e293b}
+button{background:linear-gradient(135deg,#38bdf8,#0ea5e9);font-weight:700}
 #msg{text-align:center;margin-top:12px;min-height:18px}
 .err{color:#ef4444}.ok{color:#22c55e}
 </style>
 </head>
+
 <body>
 
 <div class="card">
 <h2>LOGIN SISTEM PDAM</h2>
-<p>Manajemen Air Bersih</p>
-
-<label>Username</label>
-<input id="u" placeholder="contoh: petugas1">
-
-<label>Password</label>
-<input id="p" type="password" placeholder="••••••••">
-
-<button onclick="login()">LOGIN</button>
+<input id="u" placeholder="Username">
+<input id="p" type="password" placeholder="Password">
+<button id="btn" onclick="login()">LOGIN</button>
 <div id="msg"></div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbx-RUXa9NRf5GPRjouhdBwGSDJD9Gv8Am-TeqbV2D0gFBwSuNzlTx4blySQJFRM00tF/exec";
+const API="https://script.google.com/macros/s/AKfycbwmkZnu2zx-Snz-pnxeIXUQDgwqVE-6aMBLYLbQv6i5N5y7bC5SajqSjHPzt8UJUqbZ8a/exec";
+
+async function fetchTimeout(url,opt={},ms=15000){
+ const ctrl=new AbortController();
+ const id=setTimeout(()=>ctrl.abort(),ms);
+ opt.signal=ctrl.signal;
+ try{const r=await fetch(url,opt);clearTimeout(id);return r;}
+ catch(e){clearTimeout(id);throw e;}
+}
 
 async function login(){
+ btn.disabled=true;
  msg.innerHTML="Menghubungkan...";
+
  try{
-  let r=await fetch(API,{method:"POST",body:JSON.stringify({
-    action:"login",username:u.value.trim(),password:p.value
-  })});
-  let j=await r.json();
-  if(!j.status){msg.innerHTML="<span class='err'>Login gagal</span>";return;}
+  const r=await fetchTimeout(API,{
+   method:"POST",
+   body:JSON.stringify({
+     action:"login",
+     username:u.value.trim(),
+     password:p.value
+   })
+  });
+
+  const j=await r.json();
+
+  if(!j.status){
+    msg.innerHTML="<span class='err'>Login gagal</span>";
+    btn.disabled=false;
+    return;
+  }
+
   sessionStorage.token=j.token;
   sessionStorage.role=j.role;
-  location.href = j.role=="admin" ? "admin.html" : "petugas.html";
+
+  location.href = j.role==="admin" ? "admin.html" : "petugas.html";
+
  }catch(e){
-  msg.innerHTML="<span class='err'>Gagal terhubung ke server</span>";
+  msg.innerHTML="<span class='err'>Server tidak merespon</span>";
+  btn.disabled=false;
  }
 }
 </script>
