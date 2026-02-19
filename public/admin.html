@@ -1,44 +1,170 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Admin PDAM</title>
+<title>Dashboard Admin PDAM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-<h2>DATA INPUT PDAM</h2>
-<table border="1">
-<thead>
-<tr>
-<th>Tanggal</th>
-<th>Unit</th>
-<th>Meter Lalu</th>
-<th>Meter Ini</th>
-<th>Foto</th>
-</tr>
-</thead>
-<tbody id="tb"></tbody>
-</table>
+<body class="bg-slate-950 text-white min-h-screen flex">
+
+<!-- SIDEBAR -->
+<div id="sidebar"
+class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300">
+
+<div class="p-4 border-b border-slate-800">
+<div class="text-xl font-bold">Admin Panel</div>
+<div class="text-xs text-slate-400">Sistem PDAM</div>
+</div>
+
+<div class="flex-1 p-4 space-y-2 text-sm">
+<a href="#" class="block p-2 rounded bg-slate-800">📊 Dashboard</a>
+</div>
+
+<div class="p-4 border-t border-slate-800">
+<button onclick="logout()"
+class="w-full bg-red-600/20 text-red-400 border border-red-600 px-3 py-2 rounded hover:bg-red-600 hover:text-white transition">
+🚪 Logout
+</button>
+</div>
+
+</div>
+
+<!-- CONTENT -->
+<div class="flex-1 flex flex-col">
+
+<!-- TOPBAR -->
+<div class="bg-slate-900 border-b border-slate-800 p-3 flex items-center gap-3">
+<button onclick="toggleSidebar()" class="bg-slate-800 px-3 py-1 rounded">☰</button>
+<div class="font-semibold flex-1 text-center">Dashboard Admin PDAM</div>
+</div>
+
+<div class="p-4 space-y-4">
+
+<!-- CARD REKAP -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+<div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+<div class="text-slate-400 text-sm">Total Input</div>
+<div id="rTotal" class="text-2xl font-bold">0</div>
+</div>
+
+<div class="bg-blue-600/20 border border-blue-600 rounded-xl p-4">
+<div class="text-blue-300 text-sm">Bulan Ini</div>
+<div id="rBulan" class="text-2xl font-bold text-blue-400">0</div>
+</div>
+
+<div class="bg-green-600/20 border border-green-600 rounded-xl p-4">
+<div class="text-green-300 text-sm">Unit Aktif</div>
+<div id="rUnit" class="text-2xl font-bold text-green-400">0</div>
+</div>
+
+<div class="bg-yellow-500/20 border border-yellow-500 rounded-xl p-4">
+<div class="text-yellow-300 text-sm">Upload Foto</div>
+<div id="rFoto" class="text-2xl font-bold text-yellow-400">0</div>
+</div>
+
+</div>
+
+<!-- FILTER -->
+<input id="search"
+oninput="renderTable()"
+placeholder="🔍 Cari unit..."
+class="w-full p-2 rounded bg-slate-800 border border-slate-700">
+
+<!-- TABLE -->
+<div class="bg-slate-900 border border-slate-800 rounded-xl overflow-auto max-h-[70vh]">
+<table class="w-full text-sm" id="table"></table>
+</div>
+
+</div>
+</div>
 
 <script>
+
 const API="https://script.google.com/macros/s/AKfycbwy8MDN7v6zH-5WbBIN3YVm0q0AchlT8y7zP7_H0nAkH3WhkeogXfzHoB_IZsHF3NSGug/exec";
 const TOKEN=sessionStorage.token;
 if(!TOKEN) location.href="index.html";
 
+let DATA=[];
+
 async function load(){
 const r=await fetch(API+"?mode=input&token="+TOKEN);
-const d=await r.json();
-tb.innerHTML=d.map(x=>`
-<tr>
-<td>${x["TANGGAL INPUT"]}</td>
-<td>${x["NO UNIT"]}</td>
-<td>${x["METER BULAN LALU"]}</td>
-<td>${x["METER BULAN INI"]}</td>
-<td><a href="${x["FOTO_URL"]}" target="_blank">Foto</a></td>
-</tr>`).join("");
+DATA=await r.json();
+hitungRekap();
+renderTable();
 }
-load();
-</script>
 
+function hitungRekap(){
+rTotal.textContent=DATA.length;
+
+const bulan=new Date().getMonth();
+const tahun=new Date().getFullYear();
+
+let bulanIni=0;
+let unit=new Set();
+let foto=0;
+
+DATA.forEach(d=>{
+const t=new Date(d["TANGGAL INPUT"]);
+if(t.getMonth()===bulan && t.getFullYear()===tahun) bulanIni++;
+if(d["NO UNIT"]) unit.add(d["NO UNIT"]);
+if(d["FOTO_URL"]) foto++;
+});
+
+rBulan.textContent=bulanIni;
+rUnit.textContent=unit.size;
+rFoto.textContent=foto;
+}
+
+function renderTable(){
+const q=search.value.toLowerCase();
+const rows=DATA.filter(d=>
+Object.values(d).join(" ").toLowerCase().includes(q)
+);
+
+let h=`<tr class="bg-slate-800 sticky top-0">
+<th class="p-2 border border-slate-700">Tanggal</th>
+<th class="p-2 border border-slate-700">Unit</th>
+<th class="p-2 border border-slate-700">Meter Lalu</th>
+<th class="p-2 border border-slate-700">Meter Ini</th>
+<th class="p-2 border border-slate-700">Foto</th>
+</tr>`;
+
+rows.forEach(d=>{
+h+=`<tr class="hover:bg-slate-800">
+<td class="p-2 border border-slate-800">${formatTanggal(d["TANGGAL INPUT"])}</td>
+<td class="p-2 border border-slate-800 font-semibold">${d["NO UNIT"]}</td>
+<td class="p-2 border border-slate-800">${d["METER BULAN LALU"]}</td>
+<td class="p-2 border border-slate-800">${d["METER BULAN INI"]}</td>
+<td class="p-2 border border-slate-800">
+${d["FOTO_URL"]?`<a href="${d["FOTO_URL"]}" target="_blank" class="text-cyan-400 hover:underline">Lihat</a>`:"-"}
+</td>
+</tr>`;
+});
+
+table.innerHTML=h;
+}
+
+function formatTanggal(val){
+if(!val) return "";
+const d=new Date(val);
+if(isNaN(d)) return val;
+return d.toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
+}
+
+function toggleSidebar(){
+sidebar.classList.toggle("hidden");
+}
+
+function logout(){
+sessionStorage.clear();
+location.href="index.html";
+}
+
+load();
+
+</script>
 </body>
 </html>
