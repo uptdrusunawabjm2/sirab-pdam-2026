@@ -44,49 +44,66 @@ button{background:linear-gradient(135deg,#38bdf8,#0ea5e9);font-weight:700}const 
 <script>
 const API="https://script.google.com/macros/s/AKfycbwmkZnu2zx-Snz-pnxeIXUQDgwqVE-6aMBLYLbQv6i5N5y7bC5SajqSjHPzt8UJUqbZ8a/exec";
 
-async function fetchTimeout(url,opt={},ms=15000){
- const ctrl=new AbortController();
- const id=setTimeout(()=>ctrl.abort(),ms);
- opt.signal=ctrl.signal;
- try{const r=await fetch(url,opt);clearTimeout(id);return r;}
- catch(e){clearTimeout(id);throw e;}
-}
+document.addEventListener("DOMContentLoaded",()=>{
 
-async function login(){
- btn.disabled=true;
- msg.innerHTML="Menghubungkan...";
+ const btn=document.getElementById("btn");
+ const u=document.getElementById("u");
+ const p=document.getElementById("p");
+ const msg=document.getElementById("msg");
 
- try{
-  cconst r=await fetchTimeout(API,{
-   method:"POST",
-   headers:{
-     "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-     action:"login",
-     username:u.value.trim(),
-     password:p.value
-   })
-});
-
-  const j=await r.json();
-
-  if(!j.status){
-    msg.innerHTML="<span class='err'>Login gagal</span>";
-    btn.disabled=false;
-    return;
-  }
-
-  sessionStorage.token=j.token;
-  sessionStorage.role=j.role;
-
-  location.href = j.role==="admin" ? "admin.html" : "petugas.html";
-
- }catch(e){
-  msg.innerHTML="<span class='err'>Server tidak merespon</span>";
-  btn.disabled=false;
+ async function fetchTimeout(url,opt={},ms=15000){
+   const ctrl=new AbortController();
+   const id=setTimeout(()=>ctrl.abort(),ms);
+   opt.signal=ctrl.signal;
+   try{
+     const r=await fetch(url,opt);
+     clearTimeout(id);
+     return r;
+   }catch(e){
+     clearTimeout(id);
+     throw e;
+   }
  }
-}
+
+ async function login(){
+   btn.disabled=true;
+   msg.innerHTML="Menghubungkan...";
+
+   try{
+     const r=await fetchTimeout(API,{
+       method:"POST",
+       headers:{
+         "Content-Type":"application/json"
+       },
+       body:JSON.stringify({
+         action:"login",
+         username:u.value.trim(),
+         password:p.value
+       })
+     });
+
+     const j=await r.json();
+
+     if(!j.status){
+       msg.innerHTML="<span class='err'>Login gagal</span>";
+       btn.disabled=false;
+       return;
+     }
+
+     sessionStorage.token=j.token;
+     sessionStorage.role=j.role;
+
+     location.href=j.role==="admin"?"admin.html":"petugas.html";
+
+   }catch(e){
+     msg.innerHTML="<span class='err'>Server tidak merespon</span>";
+     btn.disabled=false;
+   }
+ }
+
+ btn.addEventListener("click",login);
+
+});
 </script>
 </body>
 </html>
