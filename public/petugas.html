@@ -21,30 +21,88 @@ const TOKEN=sessionStorage.token;
 if(!TOKEN) location.href="index.html";
 
 async function kirim(){
-const reader=new FileReader();
-reader.onload=async()=>{
-const base64=reader.result.split(",")[1];
 
-const fd1=new FormData();
-fd1.append("data",JSON.stringify({
-action:"upload",
-filename:Date.now()+".jpg",
-base64:base64,
-type:"image/jpeg"
-}));
-const up=await fetch(API,{method:"POST",body:fd1}).then(r=>r.json());
+if(!unit.value.trim()){ alert("No Unit wajib"); return; }
 
-const fd2=new FormData();
-fd2.append("data",JSON.stringify({
-mode:"input",
-token:TOKEN,
-values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
+const file = foto.files[0];
+if(!file){ alert("Foto wajib"); return; }
+
+// LOCK BUTTON
+const btn = event.target;
+btn.disabled = true;
+btn.innerText = "Mengupload...";
+
+// ===== KOMPRES FOTO =====
+const img = new Image();
+const reader = new FileReader();
+
+reader.onload = e => img.src = e.target.result;
+
+img.onload = async () => {
+
+const canvas = document.createElement("canvas");
+const MAX = 1280;
+
+let w = img.width;
+let h = img.height;
+
+if(w > MAX){
+  h = Math.round(h * (MAX / w));
+  w = MAX;
+}
+
+canvas.width = w;
+canvas.height = h;
+
+const ctx = canvas.getContext("2d");
+ctx.drawImage(img, 0, 0, w, h);
+
+const base64 = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
+
+// ===== FORMAT NAMA FILE =====
+const now = new Date();
+const yyyy = now.getFullYear();
+const mm = String(now.getMonth()+1).padStart(2,'0');
+const dd = String(now.getDate()).padStart(2,'0');
+const tgl = `${yyyy}-${mm}-${dd}`;
+const time = Date.now();
+const namaFile = `${unit.value.trim()}_${tgl}_${time}.jpg`;
+
+// ===== UPLOAD FOTO =====
+const fd1 = new FormData();
+fd1.append("data", JSON.stringify({
+  action:"upload",
+  filename:namaFile,
+  base64:base64,
+  type:"image/jpeg"
 }));
+
+const up = await fetch(API,{method:"POST",body:fd1}).then(r=>r.json());
+
+// ===== SIMPAN DATA =====
+const fd2 = new FormData();
+fd2.append("data", JSON.stringify({
+  mode:"input",
+  token:TOKEN,
+  values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
+}));
+
 await fetch(API,{method:"POST",body:fd2});
 
 alert("Data tersimpan");
+
+// RESET FORM
+unit.value="";
+lalu.value="";
+ini.value="";
+foto.value="";
+
+// UNLOCK BUTTON
+btn.disabled = false;
+btn.innerText = "SIMPAN";
 };
-reader.readAsDataURL(foto.files[0]);
+
+reader.readAsDataURL(file);
 }
 </script>
 
