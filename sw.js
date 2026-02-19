@@ -1,12 +1,15 @@
-const CACHE = "pdam-cache-v1";
+const CACHE = "pdam-cache-v2";
 
 self.addEventListener("install", e=>{
   e.waitUntil(
     caches.open(CACHE).then(c=>c.addAll([
-      "/petugas",
-      "/manifest.json"
+      "/petugas.html",
+      "/manifest.json",
+      "/icon-192.png",
+      "/icon-512.png"
     ]))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener("fetch", e=>{
