@@ -4,106 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login Sistem PDAM</title>
-
 <style>
-*{box-sizing:border-box}
-body{
-margin:0;min-height:100vh;
-display:flex;align-items:center;justify-content:center;
-font-family:Segoe UI,Arial;
-background:linear-gradient(160deg,#0ea5e9,#020617 65%);
-color:white
-}
-.card{
-width:100%;max-width:380px;
-background:rgba(2,6,23,.9);
-border-radius:22px;
-padding:26px;
-box-shadow:0 20px 50px rgba(0,0,0,.6)
-}
-input,button{
-width:100%;padding:14px;margin-top:8px;border-radius:14px;border:none;font-size:15px
-}
-input{background:#020617;color:white;border:1px solid #1e293b}
-button{background:linear-gradient(135deg,#38bdf8,#0ea5e9);font-weight:700}
-#msg{text-align:center;margin-top:12px;min-height:18px}
-.err{color:#ef4444}.ok{color:#22c55e}
+body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(160deg,#0ea5e9,#020617);font-family:Segoe UI;color:white}
+.card{background:#020617;padding:24px;border-radius:18px;width:320px;text-align:center}
+input,button{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:none}
+button{background:#38bdf8;font-weight:bold}
+#msg{margin-top:10px;color:#ef4444}
 </style>
 </head>
-
 <body>
 
 <div class="card">
-<h2>LOGIN SISTEM PDAM</h2>
+<h2>LOGIN PDAM</h2>
 <input id="u" placeholder="Username">
 <input id="p" type="password" placeholder="Password">
-<button id="btn">LOGIN</button>
+<button onclick="login()">LOGIN</button>
 <div id="msg"></div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwmkZnu2zx-Snz-pnxeIXUQDgwqVE-6aMBLYLbQv6i5N5y7bC5SajqSjHPzt8UJUqbZ8a/exec";
+const API="https://script.google.com/macros/s/AKfycbwy8MDN7v6zH-5WbBIN3YVm0q0AchlT8y7zP7_H0nAkH3WhkeogXfzHoB_IZsHF3NSGug/exec";
 
-document.addEventListener("DOMContentLoaded",()=>{
-
- const btn=document.getElementById("btn");
- const u=document.getElementById("u");
- const p=document.getElementById("p");
- const msg=document.getElementById("msg");
-
- async function fetchTimeout(url,opt={},ms=15000){
-   const ctrl=new AbortController();
-   const id=setTimeout(()=>ctrl.abort(),ms);
-   opt.signal=ctrl.signal;
-   try{
-     const r=await fetch(url,opt);
-     clearTimeout(id);
-     return r;
-   }catch(e){
-     clearTimeout(id);
-     throw e;
-   }
- }
-
- async function login(){
-   btn.disabled=true;
-   msg.innerHTML="Menghubungkan...";
-
-   try{
-     const r=await fetchTimeout(API,{
-       method:"POST",
-       headers:{
-         "Content-Type":"application/json"
-       },
-       body:JSON.stringify({
-         action:"login",
-         username:u.value.trim(),
-         password:p.value
-       })
-     });
-
-     const j=await r.json();
-
-     if(!j.status){
-       msg.innerHTML="<span class='err'>Login gagal</span>";
-       btn.disabled=false;
-       return;
-     }
-
-     sessionStorage.token=j.token;
-     sessionStorage.role=j.role;
-
-     location.href=j.role==="admin"?"admin.html":"petugas.html";
-
-   }catch(e){
-     msg.innerHTML="<span class='err'>Server tidak merespon</span>";
-     btn.disabled=false;
-   }
- }
-
- btn.addEventListener("click",login);
-
-});
+async function login(){
+msg.innerText="Menghubungkan...";
+const fd=new FormData();
+fd.append("data",JSON.stringify({
+action:"login",
+username:u.value.trim(),
+password:p.value
+}));
+try{
+const r=await fetch(API,{method:"POST",body:fd});
+const j=await r.json();
+if(!j.status){msg.innerText="Login gagal";return;}
+sessionStorage.token=j.token;
+sessionStorage.role=j.role;
+location.href=j.role==="admin"?"admin.html":"petugas.html";
+}catch{msg.innerText="Server tidak merespon";}
+}
 </script>
+
 </body>
 </html>

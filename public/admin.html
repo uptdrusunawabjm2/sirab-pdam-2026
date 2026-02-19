@@ -1,41 +1,44 @@
-<!-- ADMIN FINAL -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin PDAM</title>
+</head>
+<body>
+
+<h2>DATA INPUT PDAM</h2>
+<table border="1">
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Unit</th>
+<th>Meter Lalu</th>
+<th>Meter Ini</th>
+<th>Foto</th>
+</tr>
+</thead>
+<tbody id="tb"></tbody>
+</table>
+
 <script>
-const API="https://script.google.com/macros/s/AKfycbwmkZnu2zx-Snz-pnxeIXUQDgwqVE-6aMBLYLbQv6i5N5y7bC5SajqSjHPzt8UJUqbZ8a/exec";
+const API="https://script.google.com/macros/s/AKfycbwy8MDN7v6zH-5WbBIN3YVm0q0AchlT8y7zP7_H0nAkH3WhkeogXfzHoB_IZsHF3NSGug/exec";
 const TOKEN=sessionStorage.token;
-const ROLE=sessionStorage.role;
-
-if(!TOKEN||ROLE!=="admin") location.href="index.html";
-
-function esc(s){return String(s||"").replace(/[&<>"]/g,a=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[a]));}
-
-async function fetchTimeout(url,ms=15000){
- const ctrl=new AbortController();
- const id=setTimeout(()=>ctrl.abort(),ms);
- try{const r=await fetch(url,{signal:ctrl.signal});clearTimeout(id);return r;}
- catch(e){clearTimeout(id);throw e;}
-}
+if(!TOKEN) location.href="index.html";
 
 async function load(){
- tb.innerHTML="<tr><td colspan=5>Loading...</td></tr>";
- try{
-  const r=await fetchTimeout(API+"?mode=input&token="+TOKEN);
-  const d=await r.json();
-
-  if(!Array.isArray(d)){location.href="index.html";return;}
-
-  tb.innerHTML=d.map(x=>`
-   <tr>
-    <td>${esc(x["TANGGAL INPUT"])}</td>
-    <td><b>${esc(x["NO UNIT"])}</b></td>
-    <td>${esc(x["METER BULAN LALU"])}</td>
-    <td>${esc(x["METER BULAN INI"])}</td>
-    <td>${x["FOTO_URL"]?`<a href="${esc(x["FOTO_URL"])}" target="_blank" rel="noopener">Lihat</a>`:""}</td>
-   </tr>
-  `).join("")||"<tr><td colspan=5>Tidak ada data</td></tr>";
-
- }catch(e){
-  tb.innerHTML="<tr><td colspan=5>Gagal memuat data</td></tr>";
- }
+const r=await fetch(API+"?mode=input&token="+TOKEN);
+const d=await r.json();
+tb.innerHTML=d.map(x=>`
+<tr>
+<td>${x["TANGGAL INPUT"]}</td>
+<td>${x["NO UNIT"]}</td>
+<td>${x["METER BULAN LALU"]}</td>
+<td>${x["METER BULAN INI"]}</td>
+<td><a href="${x["FOTO_URL"]}" target="_blank">Foto</a></td>
+</tr>`).join("");
 }
 load();
 </script>
+
+</body>
+</html>
