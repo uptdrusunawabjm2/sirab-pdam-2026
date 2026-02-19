@@ -38,7 +38,19 @@ Input Meter Air
 <label class="text-sm text-slate-400">Foto Meter</label>
 
 <!-- FILE PICKER + CAMERA -->
-<input id="foto" type="file" accept="image/*" capture="environment" class="w-full text-sm">
+<div class="flex gap-2">
+  <button type="button" onclick="openCamera()"
+  class="flex-1 bg-blue-600 hover:bg-blue-700 rounded p-2 text-sm">
+  📷 Kamera
+  </button>
+
+  <button type="button" onclick="openGallery()"
+  class="flex-1 bg-slate-700 hover:bg-slate-600 rounded p-2 text-sm">
+  🖼 Galeri
+  </button>
+</div>
+
+<input id="foto" type="file" accept="image/*" class="hidden">
 
 <img id="preview" class="hidden rounded-lg border border-slate-700">
 
@@ -220,6 +232,17 @@ window.addEventListener("beforeinstallprompt", (e) => {
     deferredPrompt = null;
   };
 });
+
+/* ===== PILIH SUMBER FOTO ===== */
+function openCamera(){
+  foto.setAttribute("capture","environment");
+  foto.click();
+}
+
+function openGallery(){
+  foto.removeAttribute("capture");
+  foto.click();
+}
 
 </script>
 
