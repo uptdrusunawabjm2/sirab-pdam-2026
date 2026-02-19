@@ -1,11 +1,12 @@
 {
   "name": "PDAM Field App",
   "short_name": "PDAM",
-  "start_url": "/petugas",
+  "start_url": "/petugas.html"
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#020617",
   "orientation": "portrait",
+  "display_override": ["standalone", "minimal-ui"]
   "icons": [
     {
       "src": "/icon-192.png",
