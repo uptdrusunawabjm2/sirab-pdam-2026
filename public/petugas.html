@@ -27,7 +27,7 @@ Input Meter Air
 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
 
 <label class="text-sm text-slate-400">No Unit</label>
-<input id="unit" onblur="ambilMeterLalu()" class="w-full p-2 rounded bg-slate-800 border border-slate-700">
+<input id="unit" onblur="ambilMeterLalu()" oninput="this.value=this.value.toUpperCase()" class="w-full p-2 rounded bg-slate-800 border border-slate-700">
 
 <label class="text-sm text-slate-400">Meter Bulan Lalu</label>
 <input id="lalu" type="number" readonly
@@ -247,7 +247,7 @@ function openGallery(){
 
 /* ===== AMBIL METER BULAN LALU OTOMATIS ===== */
 async function ambilMeterLalu(){
-  const u = unit.value.trim();
+  const u = unit.value.trim().toUpperCase();
   if(!u) return;
 
   try{
