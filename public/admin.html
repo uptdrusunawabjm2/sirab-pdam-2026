@@ -47,12 +47,12 @@ class="w-full bg-red-600/20 text-red-400 border border-red-600 px-3 py-2 rounded
 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
 
   <div class="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2">
-    <div class="text-slate-400 text-xs">Total Input</div>
+    <div class="text-slate-400 text-xs">Total Input Data</div>
     <div id="rTotal" class="text-lg font-bold">0</div>
   </div>
 
   <div class="bg-blue-600/20 border border-blue-600 rounded-lg px-4 py-2">
-    <div class="text-blue-300 text-xs">Bulan Ini</div>
+    <div class="text-blue-300 text-xs">Pemakaian Air Bulan Ini</div>
     <div id="rBulan" class="text-lg font-bold text-blue-400">0</div>
   </div>
 
@@ -76,13 +76,17 @@ class="w-full bg-red-600/20 text-red-400 border border-red-600 px-3 py-2 rounded
   onchange="applyFilter()"
   class="p-2 rounded bg-slate-800 border border-slate-700">
 
+  <button onclick="resetFilter()"
+  class="px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded font-semibold">
+  ⟲ Reset
+  </button>
+
   <button onclick="exportExcel()"
   class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-semibold">
   ⬇ Export Excel
   </button>
 
 </div>
-
 
 <!-- TABLE -->
 <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-auto max-h-[70vh]">
@@ -137,15 +141,22 @@ function hitungRekap(){
   const bulan=new Date().getMonth();
   const tahun=new Date().getFullYear();
 
-  let bulanIni=0;
+let bulanIni=0;
 
-  DATA.forEach(d=>{
-    const t=new Date(d["TANGGAL"]);
-    if(t.getMonth()===bulan && t.getFullYear()===tahun) bulanIni++;
-  });
+DATA.forEach(d=>{
+  const t=new Date(d["TANGGAL"]);
+  const pakai = Number(d._pakai);
+  if(
+    t.getMonth()===bulan &&
+    t.getFullYear()===tahun &&
+    !isNaN(pakai) &&
+    pakai>0
+  ){
+    bulanIni += pakai;
+  }
+});
 
-  document.getElementById("rBulan").textContent=bulanIni;
-}
+document.getElementById("rBulan").textContent=bulanIni;
 
 function preprocessData(raw){
 
@@ -213,7 +224,7 @@ function renderTable(){
       <td class="p-2 font-semibold">${r["NO UNIT"]}</td>
       <td class="p-2">${r._meterLalu}</td>
       <td class="p-2">${isNaN(Number(r["ANGKA METER"])) ? "-" : Number(r["ANGKA METER"])}</td>
-      <td class="p-2 ${Number(r._pakai)>25 || Number(r._pakai)<0 ? 'text-yellow-400 font-bold' : 'font-semibold'}">
+      <td class="p-2 ${Number(r._pakai)>25 || Number(r._pakai)<1 ? 'text-yellow-400 font-bold' : 'font-semibold'}">
         ${r._pakai==="-"?"-":r._pakai}
         </td>
       <td class="p-2">
@@ -264,6 +275,14 @@ function applyFilter(){
     return cocokUnit && cocokTanggal;
   });
 
+  PAGE=1;
+  renderTable();
+}
+
+function resetFilter(){
+  document.getElementById("search").value="";
+  document.getElementById("filterTanggal").value="";
+  VIEW=DATA;
   PAGE=1;
   renderTable();
 }
