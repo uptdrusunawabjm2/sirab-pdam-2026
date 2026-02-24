@@ -44,37 +44,41 @@ class="w-full bg-red-600/20 text-red-400 border border-red-600 px-3 py-2 rounded
 <div class="p-4 space-y-4">
 
 <!-- CARD REKAP -->
-<div class="grid grid-cols-2 md:grid-cols-2 gap-3">
-
-<div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-<div class="text-slate-400 text-sm">Total Input</div>
-<div id="rTotal" class="text-2xl font-bold">0</div>
+<div class="bg-slate-900 border border-slate-800 rounded-lg p-3">
+  <div class="text-slate-400 text-xs">Total Input</div>
+  <div id="rTotal" class="text-xl font-bold">0</div>
 </div>
 
-<div class="bg-blue-600/20 border border-blue-600 rounded-xl p-4">
-<div class="text-blue-300 text-sm">Bulan Ini</div>
-<div id="rBulan" class="text-2xl font-bold text-blue-400">0</div>
+<div class="bg-blue-600/20 border border-blue-600 rounded-lg p-3">
+  <div class="text-blue-300 text-xs">Bulan Ini</div>
+  <div id="rBulan" class="text-xl font-bold text-blue-400">0</div>
 </div>
 
-</div>
-
-<div class="card p-4">
-  <div class="text-sm text-slate-400">Total Pemakaian Air</div>
-  <div id="totalPakai" class="text-2xl font-bold">0</div>
+<div class="bg-emerald-600/20 border border-emerald-600 rounded-lg p-3">
+  <div class="text-emerald-300 text-xs">Total Pemakaian Air</div>
+  <div id="totalPakai" class="text-xl font-bold text-emerald-400">0</div>
 </div>
 
 <!-- FILTER -->
-<div class="flex gap-2">
+<div class="flex gap-2 items-center">
+
   <input id="search"
   oninput="applyFilter()"
   placeholder="🔍 Cari unit..."
   class="flex-1 p-2 rounded bg-slate-800 border border-slate-700">
 
+  <input type="date"
+  id="filterTanggal"
+  onchange="applyFilter()"
+  class="p-2 rounded bg-slate-800 border border-slate-700">
+
   <button onclick="exportExcel()"
   class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-semibold">
   ⬇ Export Excel
   </button>
+
 </div>
+
 
 <!-- TABLE -->
 <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-auto max-h-[70vh]">
@@ -205,7 +209,9 @@ function renderTable(){
       <td class="p-2 font-semibold">${r["NO UNIT"]}</td>
       <td class="p-2">${r._meterLalu}</td>
       <td class="p-2">${isNaN(Number(r["ANGKA METER"])) ? "-" : Number(r["ANGKA METER"])}</td>
-      <td class="p-2 font-bold">${r._pakai==="-"?"-":r._pakai}</td>
+      <td class="p-2 ${Number(r._pakai)>25 || Number(r._pakai)<0 ? 'text-yellow-400 font-bold' : 'font-semibold'}">
+        ${r._pakai==="-"?"-":r._pakai}
+        </td>
       <td class="p-2">
         ${r["FOTO_URL"]?`<a href="${r["FOTO_URL"]}" target="_blank" class="text-cyan-400">Lihat</a>`:"-"}
       </td>
@@ -239,15 +245,20 @@ function prevPage(){
 }
 
 function applyFilter(){
-  const q=document.getElementById("search").value.toLowerCase().trim();
 
-  if(!q){
-    VIEW=DATA;
-  }else{
-    VIEW=DATA.filter(r=>
-      (r["NO UNIT"]||"").toLowerCase().includes(q)
+  const q=document.getElementById("search").value.trim().toLowerCase();
+  const tgl=document.getElementById("filterTanggal").value;
+
+  VIEW=DATA.filter(r=>{
+
+    const cocokUnit = !q || String(r["NO UNIT"]).toLowerCase().includes(q);
+
+    const cocokTanggal = !tgl || (
+      new Date(r["TANGGAL"]).toISOString().slice(0,10) === tgl
     );
-  }
+
+    return cocokUnit && cocokTanggal;
+  });
 
   PAGE=1;
   renderTable();
