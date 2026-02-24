@@ -141,32 +141,46 @@ function hitungRekap(){
 
 function preprocessData(raw){
 
-  const sorted=[...raw].sort((a,b)=> new Date(b["TANGGAL"]) - new Date(a["TANGGAL"]));
-  const last={};
+  // Kelompokkan data per UNIT
+  const byUnit = {};
+  raw.forEach(r=>{
+    const u=r["NO UNIT"];
+    if(!byUnit[u]) byUnit[u]=[];
+    byUnit[u].push(r);
+  });
+
   let total=0;
 
-  for(const r of sorted){
+  // Hitung pemakaian PER UNIT berdasarkan histori
+  Object.values(byUnit).forEach(list=>{
 
-    const unit=r["NO UNIT"];
-    const meter=Number(r["ANGKA METER"])||0;
+    // urutkan lama → baru untuk hitung
+    list.sort((a,b)=> new Date(a["TANGGAL"]) - new Date(b["TANGGAL"]));
 
-    const prev=last[unit] ?? null;
+    let last=null;
 
-    if(prev!==null && meter>=prev){
-      r._meterLalu=prev;
-      r._pakai=meter-prev;
-      total+=r._pakai;
-    }else{
-      r._meterLalu="-";
-      r._pakai="-";
-    }
+    list.forEach(r=>{
+      const meter=Number(r["ANGKA METER"])||0;
 
-    last[unit]=meter;
-  }
+      if(last!==null){
+        const pakai = meter - last;
+        r._meterLalu = last;
+        r._pakai = pakai>=0 ? pakai : "-";
+        if(pakai>=0) total += pakai;
+      }else{
+        r._meterLalu = "-";
+        r._pakai = "-";
+      }
 
-  document.getElementById("totalPakai").textContent=total;
+      last = meter;
+    });
+  });
 
-  return sorted;
+  // TOTAL PEMAKAIAN
+  document.getElementById("totalPakai").textContent = total;
+
+  // JANGAN UBAH URUTAN TABEL (biarkan terbaru di atas seperti sekarang)
+  return raw;
 }
 
 function renderTable(){
