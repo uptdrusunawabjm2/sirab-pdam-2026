@@ -166,7 +166,14 @@ const fd2=new FormData();
 fd2.append("data",JSON.stringify({
 mode:"input",
 token:TOKEN,
-values:[new Date(),unit.value,lalu.value,ini.value,"","",""]
+values:[
+  new Date(),          // TANGGAL INPUT
+  "",                  // RUSUNAWA (kosong / bisa isi default)
+  unit.value,          // NO UNIT
+  new Date(),          // TANGGAL (tanggal meter dicatat)
+  ini.value,           // ANGKA METER
+  ""                   // FOTO_URL (diisi setelah upload)
+]
 }));
 
 /* ===== JIKA OFFLINE ===== */
@@ -183,7 +190,14 @@ const up=await fetch(API,{method:"POST",body:fd1}).then(r=>r.json());
 fd2.set("data",JSON.stringify({
 mode:"input",
 token:TOKEN,
-values:[new Date(),unit.value,lalu.value,ini.value,"","",up.url]
+values:[
+  new Date(),          // TANGGAL INPUT
+  "",                  // RUSUNAWA
+  unit.value,          // NO UNIT
+  new Date(),          // TANGGAL
+  ini.value,           // ANGKA METER
+  up.url               // FOTO_URL
+]
 }));
 await fetch(API,{method:"POST",body:fd2});
 alert("Data tersimpan");
