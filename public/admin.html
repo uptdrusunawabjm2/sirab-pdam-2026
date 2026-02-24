@@ -57,17 +57,46 @@ class="w-full bg-red-600/20 text-red-400 border border-red-600 px-3 py-2 rounded
 
 </div>
 
+<div class="card p-4">
+  <div class="text-sm text-slate-400">Total Pemakaian Air</div>
+  <div id="totalPakai" class="text-2xl font-bold">0</div>
+</div>
+
 <!-- FILTER -->
-<input id="search"
-oninput="renderTable()"
-placeholder="🔍 Cari unit..."
-class="w-full p-2 rounded bg-slate-800 border border-slate-700">
+<div class="flex gap-2">
+  <input id="search"
+  oninput="applyFilter()"
+  placeholder="🔍 Cari unit..."
+  class="flex-1 p-2 rounded bg-slate-800 border border-slate-700">
+
+  <button onclick="exportExcel()"
+  class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-semibold">
+  ⬇ Export Excel
+  </button>
+</div>
 
 <!-- TABLE -->
 <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-auto max-h-[70vh]">
-<table class="w-full text-sm" id="table"></table>
+<table class="w-full text-sm">
+<thead class="bg-slate-800 sticky top-0">
+<tr>
+<th class="p-2 text-left">Tanggal</th>
+<th class="p-2 text-left">Unit</th>
+<th class="p-2 text-left">Meter Lalu</th>
+<th class="p-2 text-left">Meter Ini</th>
+<th class="p-2 text-left">Pemakaian</th>
+<th class="p-2 text-left">Foto</th>
+</tr>
+</thead>
+<tbody id="dataTable"></tbody>
+</table>
 </div>
-
+<!-- PAGER -->
+<div class="flex gap-2 mt-3 items-center">
+  <button onclick="prevPage()" class="px-3 py-1 bg-slate-700 rounded">Prev</button>
+  <span id="pageInfo">Page 1</span>
+  <button onclick="nextPage()" class="px-3 py-1 bg-slate-700 rounded">Next</button>
+</div>
 </div>
 </div>
 
@@ -78,77 +107,182 @@ const TOKEN=sessionStorage.token;
 if(!TOKEN) location.href="index.html";
 
 let DATA=[];
+let VIEW=[];
+let PAGE=1;
+const PAGE_SIZE=50;
 
 async function load(){
-const r=await fetch(API+"?mode=input&token="+TOKEN);
-DATA=await r.json();
-hitungRekap();
-renderTable();
+  const r=await fetch(API+"?mode=input&token="+TOKEN);
+  const json=await r.json();
+
+  DATA=preprocessData(json.data || json || []);
+  VIEW=DATA;
+
+  hitungRekap();
+  renderTable();
 }
 
 function hitungRekap(){
-rTotal.textContent=DATA.length;
+  document.getElementById("rTotal").textContent=DATA.length;
 
-const bulan=new Date().getMonth();
-const tahun=new Date().getFullYear();
+  const bulan=new Date().getMonth();
+  const tahun=new Date().getFullYear();
 
-let bulanIni=0;
-let unit=new Set();
-let foto=0;
+  let bulanIni=0;
 
-DATA.forEach(d=>{
-const t=new Date(d["TANGGAL INPUT"]);
-if(t.getMonth()===bulan && t.getFullYear()===tahun) bulanIni++;
-if(d["NO UNIT"]) unit.add(d["NO UNIT"]);
-if(d["FOTO_URL"]) foto++;
-});
+  DATA.forEach(d=>{
+    const t=new Date(d["TANGGAL"]);
+    if(t.getMonth()===bulan && t.getFullYear()===tahun) bulanIni++;
+  });
 
-rBulan.textContent=bulanIni;
+  document.getElementById("rBulan").textContent=bulanIni;
+}
+
+function preprocessData(raw){
+
+  const sorted=[...raw].sort((a,b)=> new Date(a["TANGGAL"]) - new Date(b["TANGGAL"]));
+  const last={};
+  let total=0;
+
+  for(const r of sorted){
+
+    const unit=r["NO UNIT"];
+    const meter=Number(r["ANGKA METER"])||0;
+
+    const prev=last[unit] ?? null;
+
+    if(prev!==null && meter>=prev){
+      r._meterLalu=prev;
+      r._pakai=meter-prev;
+      total+=r._pakai;
+    }else{
+      r._meterLalu="-";
+      r._pakai="-";
+    }
+
+    last[unit]=meter;
+  }
+
+  document.getElementById("totalPakai").textContent=total.toLocaleString();
+
+  return sorted;
 }
 
 function renderTable(){
-const q=search.value.toLowerCase();
-const rows=DATA.filter(d=>
-Object.values(d).join(" ").toLowerCase().includes(q)
-);
 
-let h=`<tr class="bg-slate-800 sticky top-0">
-<th class="p-2 border border-slate-700">Tanggal</th>
-<th class="p-2 border border-slate-700">Unit</th>
-<th class="p-2 border border-slate-700">Meter Lalu</th>
-<th class="p-2 border border-slate-700">Meter Ini</th>
-<th class="p-2 border border-slate-700">Foto</th>
-</tr>`;
+  const tbody=document.getElementById("dataTable");
+  if(!tbody) return;
+  tbody.innerHTML="";
 
-rows.forEach(d=>{
-h+=`<tr class="hover:bg-slate-800">
-<td class="p-2 border border-slate-800">${formatTanggal(d["TANGGAL INPUT"])}</td>
-<td class="p-2 border border-slate-800 font-semibold">${d["NO UNIT"]}</td>
-<td class="p-2 border border-slate-800">${d["METER BULAN LALU"]}</td>
-<td class="p-2 border border-slate-800">${d["METER BULAN INI"]}</td>
-<td class="p-2 border border-slate-800">
-${d["FOTO_URL"]?`<a href="${d["FOTO_URL"]}" target="_blank" class="text-cyan-400 hover:underline">Lihat</a>`:"-"}
-</td>
-</tr>`;
-});
+  const start=(PAGE-1)*PAGE_SIZE;
+  const end=start+PAGE_SIZE;
+  const slice=VIEW.slice(start,end);
 
-table.innerHTML=h;
+  const frag=document.createDocumentFragment();
+
+  for(const r of slice){
+
+    const tr=document.createElement("tr");
+    tr.className="border-b border-slate-700 hover:bg-slate-800";
+
+    tr.innerHTML=`
+      <td class="p-2">${formatTanggal(r["TANGGAL"])}</td>
+      <td class="p-2 font-semibold">${r["NO UNIT"]}</td>
+      <td class="p-2">${r._meterLalu}</td>
+      <td class="p-2">${isNaN(Number(r["ANGKA METER"])) ? "-" : Number(r["ANGKA METER"]).toLocaleString()}</td>
+      <td class="p-2 font-bold">${r._pakai==="-"?"-":r._pakai.toLocaleString()}</td>
+      <td class="p-2">
+        ${r["FOTO_URL"]?`<a href="${r["FOTO_URL"]}" target="_blank" class="text-cyan-400">Lihat</a>`:"-"}
+      </td>
+    `;
+
+    frag.appendChild(tr);
+  }
+
+  tbody.appendChild(frag);
+  renderPager();
+}
+
+function renderPager(){
+  const totalPage=Math.ceil(VIEW.length/PAGE_SIZE)||1;
+  document.getElementById("pageInfo").textContent=`Page ${PAGE} / ${totalPage}`;
+}
+
+function nextPage(){
+  const totalPage=Math.ceil(VIEW.length/PAGE_SIZE);
+  if(PAGE<totalPage){
+    PAGE++;
+    renderTable();
+  }
+}
+
+function prevPage(){
+  if(PAGE>1){
+    PAGE--;
+    renderTable();
+  }
+}
+
+function applyFilter(){
+  const q=document.getElementById("search").value.toLowerCase().trim();
+
+  if(!q){
+    VIEW=DATA;
+  }else{
+    VIEW=DATA.filter(r=>
+      (r["NO UNIT"]||"").toLowerCase().includes(q)
+    );
+  }
+
+  PAGE=1;
+  renderTable();
 }
 
 function formatTanggal(val){
-if(!val) return "";
-const d=new Date(val);
-if(isNaN(d)) return val;
-return d.toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
+  if(!val) return "";
+  const d=new Date(val);
+  if(isNaN(d)) return val;
+  return d.toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
 }
 
 function toggleSidebar(){
-sidebar.classList.toggle("hidden");
+  document.getElementById("sidebar").classList.toggle("hidden");
 }
 
 function logout(){
-sessionStorage.clear();
-location.href="index.html";
+  sessionStorage.clear();
+  location.href="index.html";
+}
+
+function exportExcel(){
+
+  if(!VIEW.length){
+    alert("Tidak ada data untuk diexport");
+    return;
+  }
+
+  let csv = "Tanggal,Unit,Meter Lalu,Meter Ini,Pemakaian,Foto\n";
+
+  VIEW.forEach(r=>{
+    const tanggal = formatTanggal(r["TANGGAL"]);
+    const unit = r["NO UNIT"] || "";
+    const meterLalu = r._meterLalu || "-";
+    const meterIni = isNaN(Number(r["ANGKA METER"])) ? "-" : r["ANGKA METER"];
+    const pakai = r._pakai === "-" ? "-" : r._pakai;
+    const foto = r["FOTO_URL"] || "-";
+
+    csv += `"${tanggal}","${unit}","${meterLalu}","${meterIni}","${pakai}","${foto}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute("href", url);
+  link.setAttribute("download", "Data_PDAM.xlsx");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 load();
