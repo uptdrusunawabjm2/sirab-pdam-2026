@@ -118,6 +118,14 @@ localStorage.removeItem("queue");
 alert("Data offline berhasil disinkronkan");
 }
 
+function formatTanggalLocal(dateObj){
+  const d = new Date(dateObj);
+  const day = String(d.getDate()).padStart(2,'0');
+  const month = String(d.getMonth()+1).padStart(2,'0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 /* ===== FUNGSI UTAMA ===== */
 async function kirim(){
 
@@ -167,12 +175,12 @@ fd2.append("data",JSON.stringify({
 mode:"input",
 token:TOKEN,
 values:[
-  new Date(),          // TANGGAL INPUT
-  "",                  // RUSUNAWA (kosong / bisa isi default)
-  unit.value,          // NO UNIT
-  new Date(),          // TANGGAL (tanggal meter dicatat)
-  ini.value,           // ANGKA METER
-  ""                   // FOTO_URL (diisi setelah upload)
+  formatTanggalLocal(new Date()),   // TANGGAL INPUT
+  "",                               // RUSUNAWA
+  unit.value,                       // NO UNIT
+  formatTanggalLocal(new Date()),   // TANGGAL
+  ini.value,                        // ANGKA METER
+  ""
 ]
 }));
 
@@ -191,12 +199,12 @@ fd2.set("data",JSON.stringify({
 mode:"input",
 token:TOKEN,
 values:[
-  new Date(),          // TANGGAL INPUT
-  "",                  // RUSUNAWA
-  unit.value,          // NO UNIT
-  new Date(),          // TANGGAL
-  ini.value,           // ANGKA METER
-  up.url               // FOTO_URL
+  formatTanggalLocal(new Date()),   // TANGGAL INPUT
+  "",                               // RUSUNAWA
+  unit.value,                       // NO UNIT
+  formatTanggalLocal(new Date()),   // TANGGAL
+  ini.value,                        // ANGKA METER
+  up.url                            // FOTO_URL
 ]
 }));
 await fetch(API,{method:"POST",body:fd2});
