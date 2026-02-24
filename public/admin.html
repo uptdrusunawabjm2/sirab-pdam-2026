@@ -180,7 +180,7 @@ function preprocessData(raw){
   document.getElementById("totalPakai").textContent = total;
 
   // JANGAN UBAH URUTAN TABEL (biarkan terbaru di atas seperti sekarang)
-  return raw;
+  return raw.sort((a,b)=> new Date(b["TANGGAL"]) - new Date(a["TANGGAL"]));
 }
 
 function renderTable(){
