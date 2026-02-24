@@ -5,6 +5,7 @@
 <title>Dashboard Admin PDAM</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 
 <body class="bg-slate-950 text-white min-h-screen flex">
@@ -140,7 +141,7 @@ function hitungRekap(){
 
 function preprocessData(raw){
 
-  const sorted=[...raw].sort((a,b)=> new Date(a["TANGGAL"]) - new Date(b["TANGGAL"]));
+  const sorted=[...raw].sort((a,b)=> new Date(b["TANGGAL"]) - new Date(a["TANGGAL"]));
   const last={};
   let total=0;
 
@@ -163,7 +164,7 @@ function preprocessData(raw){
     last[unit]=meter;
   }
 
-  document.getElementById("totalPakai").textContent=total.toLocaleString();
+  document.getElementById("totalPakai").textContent=total;
 
   return sorted;
 }
@@ -189,8 +190,8 @@ function renderTable(){
       <td class="p-2">${formatTanggal(r["TANGGAL"])}</td>
       <td class="p-2 font-semibold">${r["NO UNIT"]}</td>
       <td class="p-2">${r._meterLalu}</td>
-      <td class="p-2">${isNaN(Number(r["ANGKA METER"])) ? "-" : Number(r["ANGKA METER"]).toLocaleString()}</td>
-      <td class="p-2 font-bold">${r._pakai==="-"?"-":r._pakai.toLocaleString()}</td>
+      <td class="p-2">${isNaN(Number(r["ANGKA METER"])) ? "-" : Number(r["ANGKA METER"])}</td>
+      <td class="p-2 font-bold">${r._pakai==="-"?"-":r._pakai}</td>
       <td class="p-2">
         ${r["FOTO_URL"]?`<a href="${r["FOTO_URL"]}" target="_blank" class="text-cyan-400">Lihat</a>`:"-"}
       </td>
@@ -261,28 +262,30 @@ function exportExcel(){
     return;
   }
 
-  let csv = "Tanggal,Unit,Meter Lalu,Meter Ini,Pemakaian,Foto\n";
+  const dataExport = VIEW.map(r=>({
+    Tanggal: formatTanggal(r["TANGGAL"]),
+    Unit: r["NO UNIT"] || "",
+    "Meter Lalu": r._meterLalu==="-"? "" : r._meterLalu,
+    "Meter Ini": isNaN(Number(r["ANGKA METER"])) ? "" : Number(r["ANGKA METER"]),
+    Pemakaian: r._pakai==="-"? "" : r._pakai,
+    Foto: r["FOTO_URL"] || ""
+  }));
 
-  VIEW.forEach(r=>{
-    const tanggal = formatTanggal(r["TANGGAL"]);
-    const unit = r["NO UNIT"] || "";
-    const meterLalu = r._meterLalu || "-";
-    const meterIni = isNaN(Number(r["ANGKA METER"])) ? "-" : r["ANGKA METER"];
-    const pakai = r._pakai === "-" ? "-" : r._pakai;
-    const foto = r["FOTO_URL"] || "-";
+  const ws = XLSX.utils.json_to_sheet(dataExport);
 
-    csv += `"${tanggal}","${unit}","${meterLalu}","${meterIni}","${pakai}","${foto}"\n`;
-  });
+  ws["!cols"] = [
+    { wch: 15 }, // Tanggal
+    { wch: 10 }, // Unit
+    { wch: 12 }, // Meter Lalu
+    { wch: 12 }, // Meter Ini
+    { wch: 12 }, // Pemakaian
+    { wch: 30 }  // Foto
+  ];
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Data PDAM");
 
-  link.setAttribute("href", url);
-  link.setAttribute("download", "Data_PDAM.xlsx");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  XLSX.writeFile(wb, "Data_PDAM.xlsx");
 }
 
 load();
