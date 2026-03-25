@@ -191,7 +191,9 @@ function renderTable(){
       <td class="p-2 font-semibold">${r["NO UNIT"]}</td>
       <td class="p-2">${formatTanggal(r["TANGGAL"])}</td>
       <td class="p-2">${isNaN(Number(r["ANGKA METER"])) ? "-" : Number(r["ANGKA METER"])}</td>
-      <td class="p-2">${r._pakai==="-"?"-":r._pakai}</td>
+      <td class="p-2 ${Number(r._pakai)>25 || Number(r._pakai)<1 ? 'text-yellow-400 font-bold' : 'font-semibold'}">
+        ${r._pakai==="-"?"-":r._pakai}
+        </td>
       <td class="p-2">
         ${r["FOTO_URL"]?`<a href="${r["FOTO_URL"]}" target="_blank" class="text-cyan-400">Lihat</a>`:"-"}
       </td>
