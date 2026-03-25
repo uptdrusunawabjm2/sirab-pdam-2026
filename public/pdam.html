@@ -14,7 +14,7 @@
 <h1 class="text-xl font-bold text-center">Data Pemakaian Air Rusunawa</h1>
 
 <!-- FILTER -->
-<div class="flex gap-2 items-center">
+<div class="flex flex-col md:flex-row gap-2">
 
   <input id="search"
   oninput="applyFilter()"
@@ -33,8 +33,8 @@
 
 </div>
 
-<!-- TABLE -->
-<div class="bg-slate-900 border border-slate-800 rounded-xl overflow-auto max-h-[75vh]">
+<!-- TABLE DESKTOP -->
+<div class="hidden md:block bg-slate-900 border border-slate-800 rounded-xl overflow-auto max-h-[75vh]">
 <table class="w-full text-sm">
 <thead class="bg-slate-800 sticky top-0">
 <tr>
@@ -49,6 +49,9 @@
 <tbody id="dataTable"></tbody>
 </table>
 </div>
+
+<!-- MOBILE CARD -->
+<div id="cardContainer" class="space-y-3 md:hidden"></div>
 
 <!-- PAGER -->
 <div class="flex gap-2 mt-3 items-center justify-center">
@@ -72,7 +75,6 @@ async function load(){
   const r = await fetch(API+"?mode=public");
   const json = await r.json();
 
-  // 🔥 penting biar tidak error lagi
   if(!Array.isArray(json)){
     console.error("Response API:", json);
     alert("Gagal ambil data publik");
@@ -118,9 +120,59 @@ function preprocessData(raw){
   return raw.sort((a,b)=> new Date(b["TANGGAL"]) - new Date(a["TANGGAL"]));
 }
 
+function renderCard(){
+
+  const container = document.getElementById("cardContainer");
+  container.innerHTML = "";
+
+  const start=(PAGE-1)*PAGE_SIZE;
+  const end=start+PAGE_SIZE;
+  const slice=VIEW.slice(start,end);
+
+  for(const r of slice){
+
+    const div = document.createElement("div");
+    div.className = "bg-slate-900 border border-slate-800 rounded-xl p-3";
+
+    div.innerHTML = `
+      <div class="flex justify-between text-sm">
+        <div class="font-semibold">${r["NO UNIT"]}</div>
+        <div class="text-slate-400">${formatTanggal(r["TANGGAL"])}</div>
+      </div>
+
+      <div class="text-xs text-slate-400 mt-1">${r["RUSUNAWA"] || "-"}</div>
+
+      <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
+        <div>
+          <div class="text-slate-400 text-xs">Meter Ini</div>
+          <div>${Number(r["ANGKA METER"]) || "-"}</div>
+        </div>
+
+        <div>
+          <div class="text-slate-400 text-xs">Pemakaian</div>
+          <div class="font-semibold">${r._pakai}</div>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        ${r["FOTO_URL"]
+          ? `<a href="${r["FOTO_URL"]}" target="_blank" class="text-cyan-400 text-sm">Lihat Foto</a>`
+          : `<span class="text-slate-500 text-sm">Tidak ada foto</span>`
+        }
+      </div>
+    `;
+
+    container.appendChild(div);
+  }
+}
+
 function renderTable(){
 
+  renderCard();
+
   const tbody=document.getElementById("dataTable");
+  if(!tbody) return;
+
   tbody.innerHTML="";
 
   const start=(PAGE-1)*PAGE_SIZE;
