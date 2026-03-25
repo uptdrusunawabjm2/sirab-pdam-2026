@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Data Pemakaian Air (Publik)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-white min-h-screen p-4">
+
+<div class="max-w-6xl mx-auto space-y-4">
+
+<h1 class="text-xl font-bold text-center">Data Pemakaian Air Rusunawa</h1>
+
+<!-- FILTER -->
+<div class="flex gap-2 items-center">
+
+  <input id="search"
+  oninput="applyFilter()"
+  placeholder="🔍 Cari unit..."
+  class="flex-1 p-2 rounded bg-slate-800 border border-slate-700">
+
+  <input type="date"
+  id="filterTanggal"
+  onchange="applyFilter()"
+  class="p-2 rounded bg-slate-800 border border-slate-700">
+
+  <button onclick="resetFilter()"
+  class="px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded font-semibold">
+  ⟲ Reset
+  </button>
+
+</div>
+
+<!-- TABLE -->
+<div class="bg-slate-900 border border-slate-800 rounded-xl overflow-auto max-h-[75vh]">
+<table class="w-full text-sm">
+<thead class="bg-slate-800 sticky top-0">
+<tr>
+<th class="p-2 text-left">Rusunawa</th>
+<th class="p-2 text-left">Unit</th>
+<th class="p-2 text-left">Tanggal</th>
+<th class="p-2 text-left">Meter Ini</th>
+<th class="p-2 text-left">Pemakaian</th>
+<th class="p-2 text-left">Foto</th>
+</tr>
+</thead>
+<tbody id="dataTable"></tbody>
+</table>
+</div>
+
+<!-- PAGER -->
+<div class="flex gap-2 mt-3 items-center justify-center">
+  <button onclick="prevPage()" class="px-3 py-1 bg-slate-700 rounded">Prev</button>
+  <span id="pageInfo">Page 1</span>
+  <button onclick="nextPage()" class="px-3 py-1 bg-slate-700 rounded">Next</button>
+</div>
+
+</div>
+
+<script>
+
+const API="https://script.google.com/macros/s/AKfycbwy8MDN7v6zH-5WbBIN3YVm0q0AchlT8y7zP7_H0nAkH3WhkeogXfzHoB_IZsHF3NSGug/exec";
+
+let DATA=[];
+let VIEW=[];
+let PAGE=1;
+const PAGE_SIZE=50;
+
+async function load(){
+  const r=await fetch(API+"?mode=input");
+  const json=await r.json();
+
+  DATA=preprocessData(json.data || json || []);
+  VIEW=DATA;
+
+  renderTable();
+}
+
+function preprocessData(raw){
+
+  const byUnit = {};
+
+  raw.forEach(r=>{
+    const u=r["NO UNIT"];
+    if(!byUnit[u]) byUnit[u]=[];
+    byUnit[u].push(r);
+  });
+
+  Object.values(byUnit).forEach(list=>{
+
+    list.sort((a,b)=> new Date(a["TANGGAL"]) - new Date(b["TANGGAL"]));
+
+    let last=null;
+
+    list.forEach(r=>{
+      const meter=Number(r["ANGKA METER"])||0;
+
+      if(last!==null){
+        const pakai = meter - last;
+        r._pakai = pakai>=0 ? pakai : "-";
+      }else{
+        r._pakai = "-";
+      }
+
+      last = meter;
+    });
+  });
+
+  return raw.sort((a,b)=> new Date(b["TANGGAL"]) - new Date(a["TANGGAL"]));
+}
+
+function renderTable(){
+
+  const tbody=document.getElementById("dataTable");
+  tbody.innerHTML="";
+
+  const start=(PAGE-1)*PAGE_SIZE;
+  const end=start+PAGE_SIZE;
+  const slice=VIEW.slice(start,end);
+
+  const frag=document.createDocumentFragment();
+
+  for(const r of slice){
+
+    const tr=document.createElement("tr");
+    tr.className="border-b border-slate-700 hover:bg-slate-800";
+
+    tr.innerHTML=`
+      <td class="p-2">${r["RUSUNAWA"] || "-"}</td>
+      <td class="p-2 font-semibold">${r["NO UNIT"]}</td>
+      <td class="p-2">${formatTanggal(r["TANGGAL"])}</td>
+      <td class="p-2">${isNaN(Number(r["ANGKA METER"])) ? "-" : Number(r["ANGKA METER"])}</td>
+      <td class="p-2">${r._pakai==="-"?"-":r._pakai}</td>
+      <td class="p-2">
+        ${r["FOTO_URL"]?`<a href="${r["FOTO_URL"]}" target="_blank" class="text-cyan-400">Lihat</a>`:"-"}
+      </td>
+    `;
+
+    frag.appendChild(tr);
+  }
+
+  tbody.appendChild(frag);
+  renderPager();
+}
+
+function renderPager(){
+  const totalPage=Math.ceil(VIEW.length/PAGE_SIZE)||1;
+  document.getElementById("pageInfo").textContent=`Page ${PAGE} / ${totalPage}`;
+}
+
+function nextPage(){
+  const totalPage=Math.ceil(VIEW.length/PAGE_SIZE);
+  if(PAGE<totalPage){
+    PAGE++;
+    renderTable();
+  }
+}
+
+function prevPage(){
+  if(PAGE>1){
+    PAGE--;
+    renderTable();
+  }
+}
+
+function applyFilter(){
+
+  const q=document.getElementById("search").value.trim().toLowerCase();
+  const tgl=document.getElementById("filterTanggal").value;
+
+  VIEW=DATA.filter(r=>{
+
+    const cocokUnit = !q || String(r["NO UNIT"]).toLowerCase().includes(q);
+
+    const cocokTanggal = !tgl || (
+      new Date(r["TANGGAL"]).toISOString().slice(0,10) === tgl
+    );
+
+    return cocokUnit && cocokTanggal;
+  });
+
+  PAGE=1;
+  renderTable();
+}
+
+function resetFilter(){
+  document.getElementById("search").value="";
+  document.getElementById("filterTanggal").value="";
+  VIEW=DATA;
+  PAGE=1;
+  renderTable();
+}
+
+function formatTanggal(val){
+  if(!val) return "";
+  const d=new Date(val);
+  if(isNaN(d)) return val;
+  return d.toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
+}
+
+load();
+
+</script>
+</body>
+</html>
