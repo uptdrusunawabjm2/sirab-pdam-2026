@@ -69,11 +69,18 @@ let PAGE=1;
 const PAGE_SIZE=50;
 
 async function load(){
-  const r=await fetch(API+"?mode=input");
-  const json=await r.json();
+  const r = await fetch(API+"?mode=public");
+  const json = await r.json();
 
-  DATA=preprocessData(json.data || json || []);
-  VIEW=DATA;
+  // 🔥 penting biar tidak error lagi
+  if(!Array.isArray(json)){
+    console.error("Response API:", json);
+    alert("Gagal ambil data publik");
+    return;
+  }
+
+  DATA = preprocessData(json);
+  VIEW = DATA;
 
   renderTable();
 }
